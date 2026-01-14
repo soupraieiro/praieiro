@@ -5,12 +5,13 @@
  * AXIOMAS SEGUIDOS:
  * - A4: Nenhuma mutação financeira sem evento
  * - A5: Nenhum evento sem hash
- * - A6: Nenhum hash sem idempotency key
+ * - A9: profiles.id === auth.users.id (identidade soberana)
+ * - A20: NÃO EXISTEM colunas de saldo
  * - A23: Eventos precedem efeitos
  * 
  * REGRAS:
  * - Ledger é append-only
- * - Saldo = soma de eventos confirmados (credit - debit)
+ * - Saldo = soma de eventos confirmados (credit - debit) via RPC
  * - Front-end NUNCA altera saldo diretamente
  * - Front-end apenas dispara ações via RPC
  * 
@@ -23,7 +24,7 @@ import { useAuth } from "./useAuth";
 
 export interface FinancialEvent {
   id: string;
-  account_id: string;
+  profile_id: string; // CONSTITUTIONAL: profile_id = auth.users.id
   event_type: string;
   amount: number;
   currency: string;
@@ -55,6 +56,28 @@ export function useFinancialLedger() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Buscar saldo via RPC (A20: saldo calculado, não armazenado)
+  const fetchBalanceViaRPC = useCallback(async (): Promise<number> => {
+    if (!user?.id) return 0;
+
+    try {
+      const { data, error: rpcError } = await supabase.rpc("get_user_balance", {
+        p_profile_id: user.id,
+        p_currency: "ZIMBU",
+      });
+
+      if (rpcError) {
+        console.error("[useFinancialLedger] RPC error:", rpcError);
+        return 0;
+      }
+
+      return Number(data) || 0;
+    } catch (err) {
+      console.error("[useFinancialLedger] Balance error:", err);
+      return 0;
+    }
+  }, [user?.id]);
+
   // Fetch ledger events for the user
   const fetchLedgerEvents = useCallback(async () => {
     if (!user) {
@@ -68,21 +91,41 @@ export function useFinancialLedger() {
     setError(null);
 
     try {
-      // IDENTIDADE SOBERANA: account_id = profiles.id = auth.users.id
-      // A tabela financial_ledger foi criada pela migração - usando any pois tipos serão regenerados
+      // CONSTITUTIONAL: profile_id = auth.users.id (identidade soberana)
       const { data, error: fetchError } = await supabase
-        .from("financial_ledger" as unknown as "profiles")
-        .select("*")
-        .eq("account_id" as "id", user.id)
+        .from("ledger")
+        .select("id, profile_id, entry_type, amount, currency, description, status, signature_hash, satoshi_hash, created_at")
+        .eq("profile_id", user.id)
         .order("created_at", { ascending: false });
 
       if (fetchError) throw fetchError;
 
-      // Type assertion para a tabela que foi criada pela migração
-      const ledgerEvents = (data || []) as unknown as FinancialEvent[];
+      // Map to FinancialEvent format
+      const ledgerEvents: FinancialEvent[] = (data || []).map((entry) => {
+        const creditTypes = ["deposit", "credit", "refund", "cashback", "bonus"];
+        const direction = creditTypes.some(t => 
+          entry.entry_type?.toLowerCase().includes(t)
+        ) ? "credit" : "debit";
+
+        return {
+          id: entry.id,
+          profile_id: entry.profile_id,
+          event_type: entry.entry_type,
+          amount: entry.amount,
+          currency: entry.currency,
+          direction,
+          status: entry.status,
+          idempotency_key: entry.signature_hash || "",
+          payload: {},
+          previous_hash: null,
+          satoshi_hash: entry.satoshi_hash || "",
+          created_at: entry.created_at,
+        };
+      });
+
       setEvents(ledgerEvents);
 
-      // Calculate balance from events (SALDO = soma de eventos confirmados)
+      // Calculate totals from events
       const confirmedEvents = ledgerEvents.filter(e => e.status === "confirmed");
       const credits = confirmedEvents
         .filter(e => e.direction === "credit")
@@ -91,10 +134,13 @@ export function useFinancialLedger() {
         .filter(e => e.direction === "debit")
         .reduce((sum, e) => sum + Number(e.amount), 0);
 
+      // CONSTITUTIONAL (A20): Buscar saldo via RPC
+      const rpcBalance = await fetchBalanceViaRPC();
+
       setBalance({
         credits,
         debits,
-        balance: credits - debits,
+        balance: rpcBalance || (credits - debits),
         currency: "ZIMBU",
       });
     } catch (err) {
@@ -103,7 +149,7 @@ export function useFinancialLedger() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, fetchBalanceViaRPC]);
 
   useEffect(() => {
     fetchLedgerEvents();

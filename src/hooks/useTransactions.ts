@@ -1,24 +1,33 @@
-import { useState, useEffect } from "react";
+/**
+ * HOOK CONSTITUCIONAL: TRANSAÇÕES VIA LEDGER
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * AXIOMAS SEGUIDOS:
+ * - A3: Append-only para eventos históricos
+ * - A4: Nenhuma mutação financeira sem evento
+ * - A20: NÃO EXISTEM colunas de saldo (balance_after PROIBIDO)
+ * - A9: profiles.id === auth.users.id (identidade soberana)
+ * 
+ * REGRAS:
+ * - Saldo NUNCA é persistido - apenas calculado via agregação
+ * - Usar RPC get_user_balance para saldo
+ * - Ledger é somente leitura no frontend
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "./useProfile";
 
 /**
- * PRAIEIRO CONSTITUTIONAL HOOK
- * 
- * IDENTIDADE SOBERANA: profiles.id = auth.users.id
- * 
- * Este hook usa o LEDGER (fonte única de verdade financeira)
- * NÃO usa a tabela transactions (deprecated)
- * 
- * Ledger é APPEND-ONLY e IMUTÁVEL
+ * Entrada do Ledger - SEM balance_after (A20)
  */
-
 export interface LedgerEntry {
   id: string;
   profile_id: string; // profiles.id = auth.users.id (identidade soberana)
   entry_type: string;
   amount: number;
-  balance_after: number;
   currency: string;
   description: string | null;
   status: string;
@@ -41,45 +50,75 @@ export interface Transaction {
 
 /**
  * Hook constitucional para transações via Ledger
- * APPEND-ONLY - Nenhuma mutação direta permitida
+ * APPEND-ONLY - Saldo calculado via RPC (não armazenado)
  */
 export function useTransactions() {
   const { profile } = useProfile();
   const [transactions, setTransactions] = useState<LedgerEntry[]>([]);
+  const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (profile) {
-      fetchLedgerTransactions();
-    } else {
-      setTransactions([]);
-      setLoading(false);
-    }
-  }, [profile]);
+  // Buscar saldo via RPC (A20: saldo calculado, não armazenado)
+  const fetchBalance = useCallback(async () => {
+    if (!profile?.id) return 0;
 
-  const fetchLedgerTransactions = async () => {
-    if (!profile) return;
+    try {
+      const { data, error: rpcError } = await supabase.rpc("get_user_balance", {
+        p_profile_id: profile.id,
+        p_currency: "BRL",
+      });
+
+      if (rpcError) {
+        console.error("[useTransactions] RPC error:", rpcError);
+        return 0;
+      }
+
+      return Number(data) || 0;
+    } catch (err) {
+      console.error("[useTransactions] Balance error:", err);
+      return 0;
+    }
+  }, [profile?.id]);
+
+  // Buscar histórico de transações (somente leitura)
+  const fetchLedgerTransactions = useCallback(async () => {
+    if (!profile?.id) {
+      setTransactions([]);
+      setBalance(0);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
       // CONSTITUTIONAL: Buscar do ledger usando profile.id (identidade soberana)
+      // SEM balance_after (A20: saldo não é armazenado)
       const { data, error: fetchError } = await supabase
         .from("ledger")
-        .select("id, profile_id, entry_type, amount, balance_after, currency, description, status, signature_hash, satoshi_hash, created_at")
-        .eq("profile_id", profile.id) // profile.id = auth.users.id
+        .select("id, profile_id, entry_type, amount, currency, description, status, signature_hash, satoshi_hash, created_at")
+        .eq("profile_id", profile.id)
         .order("created_at", { ascending: false });
 
       if (fetchError) throw fetchError;
+      
       setTransactions((data || []) as LedgerEntry[]);
+
+      // Buscar saldo via RPC (A20)
+      const currentBalance = await fetchBalance();
+      setBalance(currentBalance);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar transações do ledger");
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.id, fetchBalance]);
+
+  useEffect(() => {
+    fetchLedgerTransactions();
+  }, [fetchLedgerTransactions]);
 
   // Identificar direção da transação pelo entry_type
   const getDirection = (entryType: string): "credit" | "debit" => {
@@ -87,7 +126,7 @@ export function useTransactions() {
     return creditTypes.some(t => entryType.toLowerCase().includes(t.toLowerCase())) ? "credit" : "debit";
   };
 
-  // Totals calculados a partir do ledger (fonte única de verdade)
+  // Totais calculados a partir do ledger (fonte única de verdade)
   const totals = {
     // Total de créditos confirmados
     creditos: transactions
@@ -97,10 +136,9 @@ export function useTransactions() {
     debitos: transactions
       .filter((t) => getDirection(t.entry_type) === "debit" && t.status === "confirmed")
       .reduce((sum, t) => sum + Number(t.amount), 0),
-    // Saldo = último balance_after ou créditos - débitos
+    // CONSTITUTIONAL (A20): Saldo via RPC, não armazenado
     get saldo() {
-      const lastConfirmed = transactions.find(t => t.status === "confirmed");
-      return lastConfirmed?.balance_after ?? (this.creditos - this.debitos);
+      return balance;
     },
     // Legacy aliases para compatibilidade
     get compras() {
@@ -118,8 +156,8 @@ export function useTransactions() {
     fetchTransactions: fetchLedgerTransactions,
     refetch: fetchLedgerTransactions,
     totals,
-    // Saldo direto do ledger
-    balance: totals.saldo,
+    // Saldo via RPC (A20)
+    balance,
   };
 }
 
