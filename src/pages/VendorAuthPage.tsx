@@ -45,11 +45,11 @@ export default function VendorAuthPage() {
   useEffect(() => {
     const checkVendorRole = async () => {
       if (!loading && user) {
-        // Check if user is a vendor
-        const { data: roles } = await supabase
-          .from("user_roles")
+        // Check if user is a vendor using governance_roles (constitutional)
+        const { data: roles } = await (supabase as any)
+          .from("governance_roles")
           .select("role")
-          .eq("user_id", user.id)
+          .eq("profile_id", user.id)
           .eq("role", "vendor");
         
         if (roles && roles.length > 0) {
@@ -296,13 +296,13 @@ export default function VendorAuthPage() {
         return;
       }
       
-      // Check if user is a vendor
+      // Check if user is a vendor using governance_roles (constitutional)
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (currentUser) {
-        const { data: roles } = await supabase
-          .from("user_roles")
+        const { data: roles } = await (supabase as any)
+          .from("governance_roles")
           .select("role")
-          .eq("user_id", currentUser.id)
+          .eq("profile_id", currentUser.id)
           .eq("role", "vendor");
         
         if (!roles || roles.length === 0) {
@@ -399,9 +399,9 @@ export default function VendorAuthPage() {
           return;
         }
 
-        // Assign vendor role
-        const { error: roleError } = await supabase.from("user_roles").insert({
-          user_id: data.user.id,
+        // Assign vendor role using governance_roles (constitutional)
+        const { error: roleError } = await (supabase as any).from("governance_roles").insert({
+          profile_id: data.user.id,
           role: "vendor",
         });
 

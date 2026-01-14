@@ -22,17 +22,20 @@ import { useProfile } from "./useProfile";
 
 /**
  * Entrada do Ledger - SEM balance_after (A20)
+ * Usando event_type (nome constitucional) com fallback para entry_type
  */
 export interface LedgerEntry {
   id: string;
   profile_id: string; // profiles.id = auth.users.id (identidade soberana)
-  entry_type: string;
+  event_type?: string; // Nome constitucional
+  entry_type?: string; // Legacy fallback
   amount: number;
   currency: string;
   description: string | null;
   status: string;
   signature_hash: string | null;
   satoshi_hash: string | null;
+  previous_hash?: string | null; // Encadeamento Satoshi
   created_at: string;
 }
 
@@ -96,9 +99,10 @@ export function useTransactions() {
     try {
       // CONSTITUTIONAL: Buscar do ledger usando profile.id (identidade soberana)
       // SEM balance_after (A20: saldo não é armazenado)
-      const { data, error: fetchError } = await supabase
+      // Usando event_type (nome constitucional) com fallback para entry_type
+      const { data, error: fetchError } = await (supabase as any)
         .from("ledger")
-        .select("id, profile_id, entry_type, amount, currency, description, status, signature_hash, satoshi_hash, created_at")
+        .select("id, profile_id, event_type, entry_type, amount, currency, description, status, signature_hash, satoshi_hash, previous_hash, created_at")
         .eq("profile_id", profile.id)
         .order("created_at", { ascending: false });
 
@@ -120,7 +124,11 @@ export function useTransactions() {
     fetchLedgerTransactions();
   }, [fetchLedgerTransactions]);
 
-  // Identificar direção da transação pelo entry_type
+  // Identificar direção da transação pelo event_type (constitucional) ou entry_type (legacy)
+  const getEventType = (entry: LedgerEntry): string => {
+    return entry.event_type || entry.entry_type || "";
+  };
+
   const getDirection = (entryType: string): "credit" | "debit" => {
     const creditTypes = ["deposit", "credit", "refund", "cashback", "bonus", "DEPOSIT_CONFIRMED", "PAYMENT_RECEIVED"];
     return creditTypes.some(t => entryType.toLowerCase().includes(t.toLowerCase())) ? "credit" : "debit";
@@ -130,11 +138,11 @@ export function useTransactions() {
   const totals = {
     // Total de créditos confirmados
     creditos: transactions
-      .filter((t) => getDirection(t.entry_type) === "credit" && t.status === "confirmed")
+      .filter((t) => getDirection(getEventType(t)) === "credit" && t.status === "confirmed")
       .reduce((sum, t) => sum + Number(t.amount), 0),
     // Total de débitos confirmados
     debitos: transactions
-      .filter((t) => getDirection(t.entry_type) === "debit" && t.status === "confirmed")
+      .filter((t) => getDirection(getEventType(t)) === "debit" && t.status === "confirmed")
       .reduce((sum, t) => sum + Number(t.amount), 0),
     // CONSTITUTIONAL (A20): Saldo via RPC, não armazenado
     get saldo() {
@@ -168,9 +176,10 @@ export function useTransactions() {
 export function useLegacyTransactions() {
   const { transactions, loading, error, totals, balance } = useTransactions();
 
-  // Identificar tipo pelo entry_type
-  const mapEntryTypeToTipo = (entryType: string): Transaction["tipo"] => {
-    const lowerType = entryType.toLowerCase();
+  // Identificar tipo pelo event_type (constitucional) ou entry_type (legacy)
+  const mapEntryTypeToTipo = (entry: LedgerEntry): Transaction["tipo"] => {
+    const eventType = entry.event_type || entry.entry_type || "";
+    const lowerType = eventType.toLowerCase();
     if (lowerType.includes("deposit")) return "deposito";
     if (lowerType.includes("withdraw") || lowerType.includes("saque")) return "saque";
     if (lowerType.includes("payment") || lowerType.includes("compra")) return "compra";
@@ -181,7 +190,7 @@ export function useLegacyTransactions() {
   const legacyTransactions: Transaction[] = transactions.map((t) => ({
     id: t.id,
     profile_id: t.profile_id,
-    tipo: mapEntryTypeToTipo(t.entry_type),
+    tipo: mapEntryTypeToTipo(t),
     valor: t.amount,
     descricao: t.description,
     data_transacao: t.created_at,

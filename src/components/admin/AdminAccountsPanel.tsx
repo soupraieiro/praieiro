@@ -150,13 +150,13 @@ export function AdminAccountsPanel() {
 
         if (vendorError) throw vendorError;
 
-        // Add vendor role
-        await supabase
-          .from("user_roles")
+        // Add vendor role using governance_roles (constitutional)
+        await (supabase as any)
+          .from("governance_roles")
           .upsert({
-            user_id: session.user.id,
+            profile_id: session.user.id,
             role: "vendor"
-          }, { onConflict: "user_id,role" });
+          }, { onConflict: "profile_id,role" });
       }
 
       // Create client profile if not exists

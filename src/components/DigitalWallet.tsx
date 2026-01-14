@@ -213,9 +213,10 @@ export function DigitalWallet() {
     queryKey: ["ledger-transactions", client?.id],
     queryFn: async () => {
       if (!client?.id) return [];
-      const { data, error } = await supabase
+      // CONSTITUTIONAL: event_type (A5), SEM balance_after (A20)
+      const { data, error } = await (supabase as any)
         .from("ledger")
-        .select("id, entry_type, amount, balance_after, currency, description, status, signature_hash, created_at")
+        .select("id, event_type, entry_type, amount, currency, description, status, signature_hash, satoshi_hash, previous_hash, created_at")
         .eq("profile_id", client.id)
         .order("created_at", { ascending: false })
         .limit(10);

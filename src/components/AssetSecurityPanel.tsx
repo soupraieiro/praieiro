@@ -71,17 +71,20 @@ export function AssetSecurityPanel() {
     queryKey: ["transaction-security", profile?.id],
     queryFn: async () => {
       if (!profile?.id) return [];
-      const { data, error } = await supabase
+      // CONSTITUTIONAL: event_type (A5), SEM balance_after (A20)
+      const { data, error } = await (supabase as any)
         .from("ledger")
-        .select("id, profile_id, entry_type, amount, balance_after, currency, description, status, signature_hash, created_at")
+        .select("id, profile_id, event_type, entry_type, amount, currency, description, status, signature_hash, satoshi_hash, previous_hash, created_at")
         .eq("profile_id", profile.id)
         .order("created_at", { ascending: false })
         .limit(5);
       if (error) throw error;
       
       // Formatar hash_display
-      return (data || []).map(tx => ({
+      return (data || []).map((tx: any) => ({
         ...tx,
+        // Use event_type if available, fallback to entry_type
+        entry_type: tx.event_type || tx.entry_type,
         hash_display: tx.signature_hash 
           ? `${tx.signature_hash.slice(0, 8)}...${tx.signature_hash.slice(-8)}`
           : null
