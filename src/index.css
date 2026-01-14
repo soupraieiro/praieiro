@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Praieiro Design System - Beach-inspired colors */
+
+@layer base {
+  :root {
+    /* Core Colors */
+    --background: 40 33% 97%;
+    --foreground: 210 50% 15%;
+
+    /* Sand/Cream tones */
+    --card: 40 40% 96%;
+    --card-foreground: 210 50% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 50% 15%;
+
+    /* Deep Ocean Blue - Primary */
+    --primary: 210 70% 25%;
+    --primary-foreground: 40 40% 98%;
+
+    /* Sandy Beige - Secondary */
+    --secondary: 35 40% 90%;
+    --secondary-foreground: 210 50% 20%;
+
+    /* Muted sand tones */
+    --muted: 35 30% 92%;
+    --muted-foreground: 210 20% 40%;
+
+    /* Sunny Orange - Accent */
+    --accent: 35 95% 55%;
+    --accent-foreground: 210 50% 15%;
+
+    /* WhatsApp Green */
+    --whatsapp: 142 70% 40%;
+    --whatsapp-foreground: 0 0% 100%;
+
+    /* Ocean gradient colors */
+    --ocean-light: 200 80% 60%;
+    --ocean-dark: 210 70% 25%;
+    --sun-yellow: 45 100% 60%;
+    --sun-orange: 30 95% 55%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 35 25% 85%;
+    --input: 35 25% 88%;
+    --ring: 210 70% 25%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 210 50% 10%;
+    --foreground: 40 40% 98%;
+
+    --card: 210 45% 15%;
+    --card-foreground: 40 40% 98%;
+
+    --popover: 210 45% 12%;
+    --popover-foreground: 40 40% 98%;
+
+    --primary: 200 80% 60%;
+    --primary-foreground: 210 50% 10%;
+
+    --secondary: 210 30% 20%;
+    --secondary-foreground: 40 40% 98%;
+
+    --muted: 210 30% 18%;
+    --muted-foreground: 40 20% 70%;
+
+    --accent: 35 95% 55%;
+    --accent-foreground: 210 50% 10%;
+
+    --whatsapp: 142 70% 45%;
+    --whatsapp-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 210 30% 25%;
+    --input: 210 30% 22%;
+    --ring: 200 80% 60%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  .ocean-gradient {
+    background: linear-gradient(135deg, hsl(var(--ocean-dark)) 0%, hsl(var(--primary)) 50%, hsl(var(--ocean-light)) 100%);
+  }
+
+  .sun-gradient {
+    background: linear-gradient(135deg, hsl(var(--sun-yellow)) 0%, hsl(var(--sun-orange)) 100%);
+  }
+
+  .sand-gradient {
+    background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%);
+  }
+
+  .whatsapp-gradient {
+    background: linear-gradient(135deg, hsl(142 70% 45%) 0%, hsl(142 70% 35%) 100%);
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+  }
+
+  .section-padding {
+    @apply px-4 py-12 md:px-6 md:py-16 lg:py-20;
+  }
+
+  .container-narrow {
+    @apply max-w-4xl mx-auto;
+  }
+
+  /* Safe area for bottom navigation on mobile */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pb-safe {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Page padding for bottom navigation */
+  .page-with-bottom-nav {
+    @apply pb-20 md:pb-4;
+  }
+}
