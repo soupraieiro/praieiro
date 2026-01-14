@@ -7863,7 +7863,6 @@ export type Database = {
         Row: {
           accuracy_radius: number | null
           freshness: string | null
-          full_name: string | null
           heading: number | null
           latitude: number | null
           location_age_seconds: number | null
@@ -7872,10 +7871,36 @@ export type Database = {
           longitude: number | null
           product_category: string | null
           profile_id: string | null
-          profile_photo_url: string | null
           speed: number | null
           status: string | null
-          whatsapp_number: string | null
+        }
+        Insert: {
+          accuracy_radius?: number | null
+          freshness?: never
+          heading?: number | null
+          latitude?: never
+          location_age_seconds?: never
+          location_source?: string | null
+          location_updated_at?: string | null
+          longitude?: never
+          product_category?: string | null
+          profile_id?: string | null
+          speed?: number | null
+          status?: string | null
+        }
+        Update: {
+          accuracy_radius?: number | null
+          freshness?: never
+          heading?: number | null
+          latitude?: never
+          location_age_seconds?: never
+          location_source?: string | null
+          location_updated_at?: string | null
+          longitude?: never
+          product_category?: string | null
+          profile_id?: string | null
+          speed?: number | null
+          status?: string | null
         }
         Relationships: [
           {
@@ -7890,21 +7915,39 @@ export type Database = {
       vendors_public: {
         Row: {
           created_at: string | null
-          email: string | null
           establishment_type:
             | Database["public"]["Enums"]["establishment_type"]
             | null
-          full_name: string | null
           latitude: number | null
-          location: unknown
           longitude: number | null
-          phone: string | null
           product_category: string | null
           product_description: string | null
           profile_id: string | null
-          profile_photo_url: string | null
           status: string | null
-          whatsapp_number: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_type?:
+            | Database["public"]["Enums"]["establishment_type"]
+            | null
+          latitude?: never
+          longitude?: never
+          product_category?: string | null
+          product_description?: string | null
+          profile_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          establishment_type?:
+            | Database["public"]["Enums"]["establishment_type"]
+            | null
+          latitude?: never
+          longitude?: never
+          product_category?: string | null
+          product_description?: string | null
+          profile_id?: string | null
+          status?: string | null
         }
         Relationships: [
           {

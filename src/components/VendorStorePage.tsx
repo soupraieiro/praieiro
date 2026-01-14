@@ -45,10 +45,15 @@ export function VendorStorePage({ vendorId, onClose }: VendorStorePageProps) {
 
   useEffect(() => {
     const fetchVendor = async () => {
-      // Use vendors_public view which has profile_id as identifier
+      // Query vendor with profile data (respecting RLS)
       const { data } = await supabase
-        .from("vendors_public")
-        .select("profile_id, full_name, product_category, product_description, profile_photo_url")
+        .from("vendors")
+        .select(`
+          profile_id,
+          product_category,
+          product_description,
+          profiles!inner(full_name, profile_photo_url)
+        `)
         .eq("profile_id", vendorId)
         .eq("status", "active")
         .single();
@@ -56,10 +61,10 @@ export function VendorStorePage({ vendorId, onClose }: VendorStorePageProps) {
       if (data) {
         setVendor({
           id: data.profile_id || "",
-          full_name: data.full_name || "",
+          full_name: (data.profiles as any)?.full_name || "",
           product_category: data.product_category || "",
           product_description: data.product_description,
-          profile_photo_url: data.profile_photo_url
+          profile_photo_url: (data.profiles as any)?.profile_photo_url
         });
       }
 

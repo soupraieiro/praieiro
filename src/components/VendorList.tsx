@@ -27,19 +27,24 @@ export function VendorList({ beachId, beachName, isActive }: VendorListProps) {
     async function fetchVendors() {
       setLoading(true);
       
-      // Use vendors_public view which has profile_id
+      // Query vendors with profile data (respecting RLS)
       const { data, error } = await supabase
-        .from("vendors_public")
-        .select("profile_id, full_name, product_category, product_description, profile_photo_url")
+        .from("vendors")
+        .select(`
+          profile_id,
+          product_category,
+          product_description,
+          profiles!inner(full_name, profile_photo_url)
+        `)
         .eq("status", "active");
 
       if (!error && data) {
         const vendorData = data.map(v => ({
           id: v.profile_id || "",
-          full_name: v.full_name || "",
+          full_name: (v.profiles as any)?.full_name || "",
           product_category: v.product_category || "",
           product_description: v.product_description,
-          profile_photo_url: v.profile_photo_url
+          profile_photo_url: (v.profiles as any)?.profile_photo_url
         })).filter((v): v is Vendor => v.id !== "");
         setVendors(vendorData);
       }
