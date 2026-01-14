@@ -1,6 +1,13 @@
 /**
- * HOOK DE GAMIFICAÇÃO - DAILY STREAK
+ * HOOK CONSTITUCIONAL: DAILY STREAK / GAMIFICAÇÃO
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * AXIOMA A9: profiles.id === auth.users.id (identidade soberana)
+ * PROIBIDO: user_id (usar profile_id)
+ * 
  * Registra acessos diários e concede Conchas a cada 10 acessos
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -32,6 +39,8 @@ export function useDailyStreak(): UseDailyStreakResult {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // CONSTITUTIONAL: profile.id === auth.users.id (identidade soberana)
+      // Nota: RPC ainda usa p_user_id por compatibilidade de banco
       const { data, error } = await supabase.rpc('register_daily_access', {
         p_user_id: user.id
       });

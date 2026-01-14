@@ -1,3 +1,16 @@
+/**
+ * HOOK CONSTITUCIONAL: ROLES DE USUÁRIO
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * AXIOMA A10: Papéis não alteram identidade
+ * AXIOMA A9: Identidade única, global e imutável
+ * 
+ * REGRA: profiles.id === auth.users.id (identidade soberana)
+ * PROIBIDO: user_id (usar profile_id)
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,17 +24,17 @@ interface UseUserRoleReturn {
 }
 
 /**
- * Hook centralizado para gerenciar roles de usuário
- * FASE 1: Role é criado automaticamente pelo trigger handle_new_user
- * Este hook apenas LÊ o role - NÃO tenta criar
+ * Hook constitucional para gerenciar roles de usuário
+ * IDENTIDADE SOBERANA: profile_id = auth.users.id
+ * Role é criado automaticamente pelo trigger handle_new_user
  */
-export function useUserRole(userId: string | undefined): UseUserRoleReturn {
+export function useUserRole(profileId: string | undefined): UseUserRoleReturn {
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchRole = useCallback(async () => {
-    if (!userId) {
+    if (!profileId) {
       setRole(null);
       setLoading(false);
       return;
@@ -31,11 +44,12 @@ export function useUserRole(userId: string | undefined): UseUserRoleReturn {
     setError(null);
 
     try {
-      // Apenas buscar role existente - trigger cria automaticamente
+      // CONSTITUTIONAL: profile.id === auth.users.id (identidade soberana)
+      // Nota: tabela ainda usa user_id por compatibilidade de banco
       const { data, error: fetchError } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", userId)
+        .eq("user_id", profileId)
         .maybeSingle();
 
       if (fetchError) {
@@ -55,7 +69,7 @@ export function useUserRole(userId: string | undefined): UseUserRoleReturn {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [profileId]);
 
   useEffect(() => {
     fetchRole();
@@ -71,19 +85,19 @@ export function useUserRole(userId: string | undefined): UseUserRoleReturn {
 
 /**
  * Função utilitária para buscar role de usuário
- * FASE 1: Role é criado pelo trigger - esta função apenas LÊ
- * Mantida para compatibilidade com código existente
+ * CONSTITUTIONAL: Usa profile_id (identidade soberana)
  */
 export async function ensureUserRole(
-  userId: string,
+  profileId: string,
   defaultRole: "user" | "vendor" | "admin" = "user"
 ): Promise<{ success: boolean; role: string; error?: string }> {
   try {
-    // Apenas verificar se existe (trigger cria automaticamente)
+    // CONSTITUTIONAL: profile.id === auth.users.id (identidade soberana)
+    // Nota: tabela ainda usa user_id por compatibilidade
     const { data: existing, error: fetchError } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", userId)
+      .eq("user_id", profileId)
       .maybeSingle();
 
     if (fetchError) {

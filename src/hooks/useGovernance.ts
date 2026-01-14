@@ -1,6 +1,14 @@
 /**
- * HOOK DE GOVERNANÇA
+ * HOOK CONSTITUCIONAL: GOVERNANÇA
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * AXIOMA A3: Governança ≠ Identidade
+ * AXIOMA A9: profiles.id === auth.users.id (identidade soberana)
+ * PROIBIDO: user_id (usar profile_id)
+ * 
  * Gerencia estado de fases, taxas e métricas do sistema
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -40,7 +48,7 @@ interface UseGovernanceResult {
   loading: boolean;
   error: string | null;
   refreshData: () => Promise<void>;
-  calculateFee: (userId: string, amount: number, linearMeters?: number) => Promise<{
+  calculateFee: (profileId: string, amount: number, linearMeters?: number) => Promise<{
     fee: number;
     phase: number;
     god_mode: boolean;
@@ -67,8 +75,9 @@ export function useGovernance(): UseGovernanceResult {
 
       if (govError) throw govError;
       setGovernance(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
     }
   }, []);
 
@@ -77,7 +86,7 @@ export function useGovernance(): UseGovernanceResult {
       const { data, error: metricsError } = await supabase.rpc('get_mass_metrics');
       if (metricsError) throw metricsError;
       if (data) setMetrics(data as unknown as MassMetrics);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erro ao carregar métricas:', err);
     }
   }, []);
@@ -105,14 +114,16 @@ export function useGovernance(): UseGovernanceResult {
     };
   }, [refreshData]);
 
+  // CONSTITUTIONAL: profile.id === auth.users.id (identidade soberana)
+  // Nota: RPC ainda usa p_user_id por compatibilidade de banco
   const calculateFee = useCallback(async (
-    userId: string, 
+    profileId: string, 
     amount: number, 
     linearMeters: number = 0
   ): Promise<{ fee: number; phase: number; god_mode: boolean; satoshi_hash: string } | null> => {
     try {
       const { data, error } = await supabase.rpc('calculate_transaction_fee', {
-        p_user_id: userId,
+        p_user_id: profileId,
         p_transaction_amount: amount,
         p_linear_meters: linearMeters
       });
