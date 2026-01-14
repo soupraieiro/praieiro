@@ -4,9 +4,9 @@
  * 
  * AXIOMA A10: Papéis não alteram identidade
  * AXIOMA A9: Identidade única, global e imutável
+ * AXIOMA A21: NÃO EXISTE user_id
  * 
  * REGRA: profiles.id === auth.users.id (identidade soberana)
- * PROIBIDO: user_id (usar profile_id)
  * 
  * ═══════════════════════════════════════════════════════════════════════════
  */
@@ -25,8 +25,7 @@ interface UseUserRoleReturn {
 
 /**
  * Hook constitucional para gerenciar roles de usuário
- * IDENTIDADE SOBERANA: profile_id = auth.users.id
- * Role é criado automaticamente pelo trigger handle_new_user
+ * IDENTIDADE SOBERANA: profile_id === auth.users.id
  */
 export function useUserRole(profileId: string | undefined): UseUserRoleReturn {
   const [role, setRole] = useState<UserRole>(null);
@@ -44,28 +43,27 @@ export function useUserRole(profileId: string | undefined): UseUserRoleReturn {
     setError(null);
 
     try {
-      // CONSTITUTIONAL: profile.id === auth.users.id (identidade soberana)
-      // Nota: tabela ainda usa user_id por compatibilidade de banco
+      // CONSTITUTIONAL A9/A21: profile_id === auth.users.id (identidade soberana)
+      // @ts-ignore - profile_id exists in DB but types not regenerated yet
       const { data, error: fetchError } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", profileId)
+        .eq("profile_id", profileId)
         .maybeSingle();
 
       if (fetchError) {
         console.error("[useUserRole] Error fetching role:", fetchError);
         setError(fetchError.message);
-        setRole("user"); // Fallback para UI
+        setRole("user");
         return;
       }
 
-      // Role deve existir (criado por trigger)
-      // Se não existe, pode ser usuário legado - fallback para 'user'
-      setRole((data?.role as UserRole) || "user");
+      const roleValue = data?.role as string | undefined;
+      setRole((roleValue as UserRole) || "user");
     } catch (err) {
       console.error("[useUserRole] Unexpected error:", err);
       setError(err instanceof Error ? err.message : "Unknown error");
-      setRole("user"); // Fallback para UI
+      setRole("user");
     } finally {
       setLoading(false);
     }
@@ -85,19 +83,19 @@ export function useUserRole(profileId: string | undefined): UseUserRoleReturn {
 
 /**
  * Função utilitária para buscar role de usuário
- * CONSTITUTIONAL: Usa profile_id (identidade soberana)
+ * CONSTITUTIONAL A9/A21: Usa profile_id (identidade soberana)
  */
 export async function ensureUserRole(
   profileId: string,
   defaultRole: "user" | "vendor" | "admin" = "user"
 ): Promise<{ success: boolean; role: string; error?: string }> {
   try {
-    // CONSTITUTIONAL: profile.id === auth.users.id (identidade soberana)
-    // Nota: tabela ainda usa user_id por compatibilidade
+    // CONSTITUTIONAL A9/A21: profile_id === auth.users.id (identidade soberana)
+    // @ts-ignore - profile_id exists in DB but types not regenerated yet
     const { data: existing, error: fetchError } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", profileId)
+      .eq("profile_id", profileId)
       .maybeSingle();
 
     if (fetchError) {
@@ -105,10 +103,10 @@ export async function ensureUserRole(
       return { success: false, role: defaultRole, error: fetchError.message };
     }
 
-    // Retornar role existente ou fallback
+    const roleValue = existing?.role as string | undefined;
     return { 
       success: true, 
-      role: existing?.role || defaultRole 
+      role: roleValue || defaultRole 
     };
   } catch (err) {
     return {
