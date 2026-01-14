@@ -37,11 +37,11 @@ export default function VendorDashboardPage() {
           return;
         }
 
-        // Check if user is a vendor
-        const { data: roles } = await supabase
-          .from("user_roles")
+        // Check if user is a vendor using governance_roles (constitutional)
+        const { data: roles } = await (supabase as any)
+          .from("governance_roles")
           .select("role")
-          .eq("user_id", user.id)
+          .eq("profile_id", user.id)
           .eq("role", "vendor");
 
         if (!roles || roles.length === 0) {

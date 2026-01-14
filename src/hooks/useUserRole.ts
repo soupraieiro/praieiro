@@ -44,9 +44,9 @@ export function useUserRole(profileId: string | undefined): UseUserRoleReturn {
 
     try {
       // CONSTITUTIONAL A9/A21: profile_id === auth.users.id (identidade soberana)
-      // @ts-ignore - profile_id exists in DB but types not regenerated yet
-      const { data, error: fetchError } = await supabase
-        .from("user_roles")
+      // Usando governance_roles (tabela constitucional)
+      const { data, error: fetchError } = await (supabase as any)
+        .from("governance_roles")
         .select("role")
         .eq("profile_id", profileId)
         .maybeSingle();
@@ -58,7 +58,7 @@ export function useUserRole(profileId: string | undefined): UseUserRoleReturn {
         return;
       }
 
-      const roleValue = data?.role as string | undefined;
+      const roleValue = (data as any)?.role as string | undefined;
       setRole((roleValue as UserRole) || "user");
     } catch (err) {
       console.error("[useUserRole] Unexpected error:", err);
@@ -91,9 +91,9 @@ export async function ensureUserRole(
 ): Promise<{ success: boolean; role: string; error?: string }> {
   try {
     // CONSTITUTIONAL A9/A21: profile_id === auth.users.id (identidade soberana)
-    // @ts-ignore - profile_id exists in DB but types not regenerated yet
-    const { data: existing, error: fetchError } = await supabase
-      .from("user_roles")
+    // Usando governance_roles (tabela constitucional)
+    const { data: existing, error: fetchError } = await (supabase as any)
+      .from("governance_roles")
       .select("role")
       .eq("profile_id", profileId)
       .maybeSingle();
@@ -103,7 +103,7 @@ export async function ensureUserRole(
       return { success: false, role: defaultRole, error: fetchError.message };
     }
 
-    const roleValue = existing?.role as string | undefined;
+    const roleValue = (existing as any)?.role as string | undefined;
     return { 
       success: true, 
       role: roleValue || defaultRole 

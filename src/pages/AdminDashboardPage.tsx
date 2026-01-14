@@ -216,7 +216,8 @@ export default function AdminDashboardPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/admin/login"); return; }
-      const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id).eq("role", "admin").maybeSingle();
+      // Using governance_roles (constitutional) with profile_id
+      const { data: roleData } = await (supabase as any).from("governance_roles").select("role").eq("profile_id", session.user.id).eq("role", "admin").maybeSingle();
       if (!roleData) { toast.error("Acesso não autorizado"); await supabase.auth.signOut(); navigate("/admin/login"); return; }
       await loadDashboardData();
     } catch (error) { navigate("/admin/login"); }

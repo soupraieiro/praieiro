@@ -92,32 +92,34 @@ export function useFinancialLedger() {
 
     try {
       // CONSTITUTIONAL: profile_id = auth.users.id (identidade soberana)
-      const { data, error: fetchError } = await supabase
+      // Usando event_type (nome constitucional), previous_hash para encadeamento Satoshi
+      const { data, error: fetchError } = await (supabase as any)
         .from("ledger")
-        .select("id, profile_id, entry_type, amount, currency, description, status, signature_hash, satoshi_hash, created_at")
+        .select("id, profile_id, event_type, entry_type, amount, currency, description, status, signature_hash, satoshi_hash, previous_hash, created_at")
         .eq("profile_id", user.id)
         .order("created_at", { ascending: false });
 
       if (fetchError) throw fetchError;
 
       // Map to FinancialEvent format
-      const ledgerEvents: FinancialEvent[] = (data || []).map((entry) => {
+      const ledgerEvents: FinancialEvent[] = (data || []).map((entry: any) => {
         const creditTypes = ["deposit", "credit", "refund", "cashback", "bonus"];
+        const eventType = entry.event_type || entry.entry_type || "";
         const direction = creditTypes.some(t => 
-          entry.entry_type?.toLowerCase().includes(t)
+          eventType.toLowerCase().includes(t)
         ) ? "credit" : "debit";
 
         return {
           id: entry.id,
           profile_id: entry.profile_id,
-          event_type: entry.entry_type,
+          event_type: eventType,
           amount: entry.amount,
           currency: entry.currency,
           direction,
           status: entry.status,
           idempotency_key: entry.signature_hash || "",
           payload: {},
-          previous_hash: null,
+          previous_hash: entry.previous_hash || null,
           satoshi_hash: entry.satoshi_hash || "",
           created_at: entry.created_at,
         };
