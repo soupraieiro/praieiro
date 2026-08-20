@@ -23,6 +23,7 @@
  * - SE tem sessão E profile → /complete-profile ou /feed
  */
 
+import { takePostAuthRedirect } from "@/lib/authRedirect";
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -158,9 +159,10 @@ export default function AuthCallbackPage() {
         const complete = await isProfileComplete(userId);
 
         if (complete) {
-          // Profile completo → /feed
+          // Profile completo → destino pendente (ex.: consentimento OAuth) ou /feed
           setMessage("Tudo pronto! Redirecionando...");
-          setTimeout(() => navigate('/feed', { replace: true }), 1000);
+          const pending = takePostAuthRedirect();
+          setTimeout(() => navigate(pending ?? '/feed', { replace: true }), 1000);
         } else {
           // Profile incompleto → /complete-profile
           setMessage("Complete seu cadastro...");

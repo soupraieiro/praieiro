@@ -32,6 +32,7 @@ import ManifestoPage from "./pages/ManifestoPage";
 import WelcomePage from "./pages/WelcomePage";
 import CompleteProfilePage from "./pages/CompleteProfilePage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import OAuthConsentPage from "./pages/OAuthConsentPage";
 import { FeedFloatingButton } from "./components/FeedFloatingButton";
 import { PraieiroBotWidget } from "./components/PraieiroBotWidget";
 import { ConchaTransactionListener } from "./components/ConchaTransactionListener";
@@ -58,6 +59,7 @@ const App = () => (
             <SatoshiIPGuard />
             <Routes>
               <Route path="/acesso-bloqueado" element={<AccessBlockedPage />} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
               <Route path="/" element={<Index />} />
               <Route path="/clientes" element={<ClientesPage />} />
               <Route path="/cadastro" element={<AuthPage />} />

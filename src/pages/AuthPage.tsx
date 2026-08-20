@@ -25,6 +25,7 @@ import { z } from "zod";
 import { TermsConsentDialog } from "@/components/TermsConsentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import logoPraieiro from "@/assets/logo-praieiro-circle.png";
+import { rememberPostAuthRedirect, takePostAuthRedirect } from "@/lib/authRedirect";
 
 // Validações
 const emailSchema = z.string().email("E-mail inválido");
@@ -49,10 +50,15 @@ export default function AuthPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
-  // Se já está logado, redireciona para o feed
+  // Preserva destino pós-login (ex.: consentimento OAuth de integrações de agentes)
+  useEffect(() => {
+    rememberPostAuthRedirect(searchParams.get("next"));
+  }, [searchParams]);
+
+  // Se já está logado, redireciona para o destino pendente ou para o feed
   useEffect(() => {
     if (!loading && user) {
-      navigate("/feed", { replace: true });
+      navigate(takePostAuthRedirect() ?? "/feed", { replace: true });
     }
   }, [user, loading, navigate]);
 
@@ -115,7 +121,7 @@ export default function AuthPage() {
         toast({ title: "Erro", description: message, variant: "destructive" });
       } else {
         toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
-        navigate("/feed", { replace: true });
+        navigate(takePostAuthRedirect() ?? "/feed", { replace: true });
       }
     } finally {
       setIsSubmitting(false);
