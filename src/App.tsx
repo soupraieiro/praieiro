@@ -32,6 +32,7 @@ import ManifestoPage from "./pages/ManifestoPage";
 import WelcomePage from "./pages/WelcomePage";
 import CompleteProfilePage from "./pages/CompleteProfilePage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import OAuthConsentPage from "./pages/OAuthConsentPage";
 import { FeedFloatingButton } from "./components/FeedFloatingButton";
 import { PraieiroBotWidget } from "./components/PraieiroBotWidget";
 import { ConchaTransactionListener } from "./components/ConchaTransactionListener";
