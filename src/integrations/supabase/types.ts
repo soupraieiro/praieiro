@@ -8595,6 +8595,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_active_vendor_profile: {
+        Args: { _profile_id: string }
+        Returns: boolean
+      }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       is_positive_content: {
         Args: { description: string; title: string }
