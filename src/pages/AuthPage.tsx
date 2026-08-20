@@ -25,6 +25,7 @@ import { z } from "zod";
 import { TermsConsentDialog } from "@/components/TermsConsentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import logoPraieiro from "@/assets/logo-praieiro-circle.png";
+import { rememberPostAuthRedirect, takePostAuthRedirect } from "@/lib/authRedirect";
 
 // Validações
 const emailSchema = z.string().email("E-mail inválido");
