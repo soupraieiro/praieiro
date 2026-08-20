@@ -48,7 +48,6 @@ export function OnboardingFlow({ onComplete, onSkip }: OnboardingFlowProps) {
       await supabase.from("user_types").upsert({
         user_id: user.id,
         user_type: identity === "praieiro" ? "praieiro" : identity === "vendedor" ? "vendor" : "client",
-        selected_identity: identity,
         onboarding_completed: false,
         tutorial_step: 1,
       });

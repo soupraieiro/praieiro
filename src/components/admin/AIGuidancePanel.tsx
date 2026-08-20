@@ -139,10 +139,9 @@ export default function AIGuidancePanel() {
       const mockGuidance = {
         title: 'Nova Orientação Solicitada',
         guidance_type: 'improvement',
-        priority: 'medium',
+        severity: 'medium',
         description: requestDescription,
-        ai_reasoning: 'Analisando seu problema... A IA está processando a solicitação.',
-        implementation_steps: JSON.stringify([
+        step_by_step: JSON.stringify([
           {
             step_number: 1,
             title: 'Análise Inicial',

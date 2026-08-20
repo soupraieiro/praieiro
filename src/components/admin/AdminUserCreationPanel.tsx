@@ -204,6 +204,7 @@ export function AdminUserCreationPanel() {
       const { error: profileError } = await supabase
         .from("profiles")
         .insert({
+          id: authData.user.id,
           user_id: authData.user.id,
           email: formData.email,
           full_name: formData.full_name,

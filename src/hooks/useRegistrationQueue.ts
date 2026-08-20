@@ -67,7 +67,7 @@ export function useRegistrationQueue(): UseRegistrationQueueResult {
   const [error, setError] = useState<string | null>(null);
   
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
    * Enfileirar novo cadastro
