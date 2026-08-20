@@ -121,7 +121,7 @@ export default function AuthPage() {
         toast({ title: "Erro", description: message, variant: "destructive" });
       } else {
         toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
-        navigate("/feed", { replace: true });
+        navigate(takePostAuthRedirect() ?? "/feed", { replace: true });
       }
     } finally {
       setIsSubmitting(false);
