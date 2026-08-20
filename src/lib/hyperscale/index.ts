@@ -174,7 +174,7 @@ const DEFAULT_BATCH: BatchConfig = {
 
 export class BatchProcessor<T> {
   private queue: T[] = [];
-  private flushTimeout: NodeJS.Timeout | null = null;
+  private flushTimeout: ReturnType<typeof setTimeout> | null = null;
   private isProcessing = false;
   private config: BatchConfig;
   private processor: (items: T[]) => Promise<void>;
@@ -353,7 +353,7 @@ export class ResilientConnection {
   private backoff: ExponentialBackoff;
   private state: ConnectionState;
   private handlers: Set<ConnectionEventHandler> = new Set();
-  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private connectFn: () => Promise<boolean>;
 
   constructor(connectFn: () => Promise<boolean>) {

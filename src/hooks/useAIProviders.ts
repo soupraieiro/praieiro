@@ -172,7 +172,7 @@ export function useAIProviders(): UseAIProvidersResult {
 
       const { error } = await supabase
         .from('ai_providers')
-        .update(updateData)
+        .update(updateData as never)
         .eq('id', id);
 
       if (error) throw error;

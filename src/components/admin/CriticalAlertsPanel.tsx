@@ -153,7 +153,7 @@ export default function CriticalAlertsPanel() {
       const { error } = await supabase
         .from('sys_critical_alerts')
         .update({
-          is_acknowledged: true,
+          
           acknowledged_by: user?.id || null,
           acknowledged_at: new Date().toISOString(),
           resolution_notes: resolutionNotes || null

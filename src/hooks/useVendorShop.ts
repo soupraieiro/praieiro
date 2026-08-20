@@ -143,7 +143,7 @@ export function useVendorShop(): UseVendorShopResult {
     try {
       const { error: updateError } = await supabase
         .from("vendor_shops")
-        .update(updates)
+        .update(updates as never)
         .eq("id", myShop.id);
 
       if (updateError) throw updateError;

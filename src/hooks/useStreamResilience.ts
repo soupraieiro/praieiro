@@ -46,7 +46,7 @@ export function useStreamResilience(config: StreamConfig): UseStreamResilienceRe
     jitterFactor: 0.2,
   }));
   const messageBufferRef = useRef<unknown[]>([]);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const degradedModeRef = useRef(false);
 
   // Buffer messages during disconnection

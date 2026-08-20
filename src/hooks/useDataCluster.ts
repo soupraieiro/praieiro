@@ -35,7 +35,7 @@ export function useDataCluster(): UseDataClusterResult {
   const sessionId = useRef(`session_${Date.now()}_${Math.random().toString(36).slice(2)}`);
   const distinctId = useRef<string | null>(null);
   const eventQueue = useRef<DataEvent[]>([]);
-  const flushTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Gerar ou recuperar distinct ID
   useEffect(() => {
