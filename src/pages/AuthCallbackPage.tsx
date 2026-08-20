@@ -23,6 +23,7 @@
  * - SE tem sessão E profile → /complete-profile ou /feed
  */
 
+import { takePostAuthRedirect } from "@/lib/authRedirect";
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
