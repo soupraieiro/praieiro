@@ -224,11 +224,11 @@ export function AdminUserCreationPanel() {
 
       if (permError) throw permError;
 
-      // Add employee role using governance_roles (constitutional)
+      // Add employee role using user_roles (constitutional)
       const { error: roleError } = await (supabase as any)
-        .from("governance_roles")
+        .from("user_roles")
         .insert({
-          profile_id: authData.user.id,
+          user_id: authData.user.id,
           role: "employee"
         });
 

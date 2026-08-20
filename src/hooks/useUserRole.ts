@@ -43,13 +43,11 @@ export function useUserRole(profileId: string | undefined): UseUserRoleReturn {
     setError(null);
 
     try {
-      // CONSTITUTIONAL A9/A21: profile_id === auth.users.id (identidade soberana)
-      // Usando governance_roles (tabela constitucional)
-      const { data, error: fetchError } = await (supabase as any)
-        .from("governance_roles")
+      // CONSTITUTIONAL A9/A21: user_roles.user_id === auth.users.id (identidade soberana)
+      const { data, error: fetchError } = await supabase
+        .from("user_roles")
         .select("role")
-        .eq("profile_id", profileId)
-        .maybeSingle();
+        .eq("user_id", profileId);
 
       if (fetchError) {
         console.error("[useUserRole] Error fetching role:", fetchError);
@@ -58,8 +56,9 @@ export function useUserRole(profileId: string | undefined): UseUserRoleReturn {
         return;
       }
 
-      const roleValue = (data as any)?.role as string | undefined;
-      setRole((roleValue as UserRole) || "user");
+      const roles = (data ?? []).map((r) => r.role as string);
+      // Precedência: admin > vendor > user
+      setRole(roles.includes("admin") ? "admin" : roles.includes("vendor") ? "vendor" : "user");
     } catch (err) {
       console.error("[useUserRole] Unexpected error:", err);
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -90,12 +89,12 @@ export async function ensureUserRole(
   defaultRole: "user" | "vendor" | "admin" = "user"
 ): Promise<{ success: boolean; role: string; error?: string }> {
   try {
-    // CONSTITUTIONAL A9/A21: profile_id === auth.users.id (identidade soberana)
-    // Usando governance_roles (tabela constitucional)
-    const { data: existing, error: fetchError } = await (supabase as any)
-      .from("governance_roles")
+    // CONSTITUTIONAL A9/A21: user_roles.user_id === auth.users.id (identidade soberana)
+    const { data: existing, error: fetchError } = await supabase
+      .from("user_roles")
       .select("role")
-      .eq("profile_id", profileId)
+      .eq("user_id", profileId)
+      .limit(1)
       .maybeSingle();
 
     if (fetchError) {
@@ -103,7 +102,7 @@ export async function ensureUserRole(
       return { success: false, role: defaultRole, error: fetchError.message };
     }
 
-    const roleValue = (existing as any)?.role as string | undefined;
+    const roleValue = existing?.role as string | undefined;
     return { 
       success: true, 
       role: roleValue || defaultRole 
