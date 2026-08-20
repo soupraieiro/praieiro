@@ -4947,7 +4947,7 @@ export type Database = {
       profiles: {
         Row: {
           account_types: Database["public"]["Enums"]["account_type"][] | null
-          cpf: string
+          cpf: string | null
           created_at: string
           current_youtube_id: string | null
           daily_access_count: number | null
@@ -4974,15 +4974,15 @@ export type Database = {
         }
         Insert: {
           account_types?: Database["public"]["Enums"]["account_type"][] | null
-          cpf: string
+          cpf?: string | null
           created_at?: string
           current_youtube_id?: string | null
           daily_access_count?: number | null
           data_nascimento?: string | null
-          email: string
-          full_name: string
+          email?: string
+          full_name?: string
           god_mode_bypass?: boolean | null
-          id?: string
+          id: string
           last_access_date?: string | null
           linear_meters?: number | null
           location?: unknown
@@ -5001,7 +5001,7 @@ export type Database = {
         }
         Update: {
           account_types?: Database["public"]["Enums"]["account_type"][] | null
-          cpf?: string
+          cpf?: string | null
           created_at?: string
           current_youtube_id?: string | null
           daily_access_count?: number | null
