@@ -49,10 +49,15 @@ export default function AuthPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
-  // Se já está logado, redireciona para o feed
+  // Preserva destino pós-login (ex.: consentimento OAuth de integrações de agentes)
+  useEffect(() => {
+    rememberPostAuthRedirect(searchParams.get("next"));
+  }, [searchParams]);
+
+  // Se já está logado, redireciona para o destino pendente ou para o feed
   useEffect(() => {
     if (!loading && user) {
-      navigate("/feed", { replace: true });
+      navigate(takePostAuthRedirect() ?? "/feed", { replace: true });
     }
   }, [user, loading, navigate]);
 
