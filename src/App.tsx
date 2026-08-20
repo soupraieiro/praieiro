@@ -59,6 +59,7 @@ const App = () => (
             <SatoshiIPGuard />
             <Routes>
               <Route path="/acesso-bloqueado" element={<AccessBlockedPage />} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
               <Route path="/" element={<Index />} />
               <Route path="/clientes" element={<ClientesPage />} />
               <Route path="/cadastro" element={<AuthPage />} />
