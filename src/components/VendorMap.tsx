@@ -18,7 +18,7 @@ interface Vendor {
   product_category: string;
   latitude: number | null;
   longitude: number | null;
-  whatsapp_number: string;
+  locationUnlocked?: boolean;
   heading?: number | null;
   speed?: number | null;
   accuracy_radius?: number | null;
