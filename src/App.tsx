@@ -2,10 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SatoshiStateProvider } from "@/contexts/SatoshiStateContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { RoleRoute } from "@/components/RoleRoute";
+import ClientDashboardPage from "./pages/ClientDashboardPage";
 import { SatoshiIPGuard } from "@/components/SatoshiIPGuard";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
@@ -94,7 +96,27 @@ const App = () => (
               />
               <Route path="/ambulantes" element={<AmbulantesPage />} />
               <Route path="/login-ambulante" element={<VendorAuthPage />} />
-              <Route path="/painel-ambulante" element={<VendorDashboardPage />} />
+              {/* 🏪 DASHBOARD DO AMBULANTE (RBAC: vendor/admin) */}
+              <Route
+                path="/painel-ambulante"
+                element={
+                  <RoleRoute allow={["vendor", "admin"]}>
+                    <VendorDashboardPage />
+                  </RoleRoute>
+                }
+              />
+              <Route path="/vendor/dashboard" element={<Navigate to="/painel-ambulante" replace />} />
+              {/* 🏖️ DASHBOARD / FEED DO CLIENTE (RBAC: user/admin — vendedor não entra) */}
+              <Route
+                path="/painel-cliente"
+                element={
+                  <ProtectedRoute>
+                    <RoleRoute allow={["user", "admin"]}>
+                      <ClientDashboardPage />
+                    </RoleRoute>
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
               <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -105,11 +127,14 @@ const App = () => (
               <Route path="/marketplace" element={<MarketplacePage />} />
               <Route path="/manifesto" element={<ManifestoPage />} />
               <Route path="/payment-success" element={<PaymentSuccessPage />} />
+              {/* Feed é exclusivo do cliente — vendedor cai no painel do ambulante */}
               <Route 
                 path="/feed" 
                 element={
                   <ProtectedRoute>
-                    <FeedPage />
+                    <RoleRoute allow={["user", "admin"]}>
+                      <FeedPage />
+                    </RoleRoute>
                   </ProtectedRoute>
                 } 
               />

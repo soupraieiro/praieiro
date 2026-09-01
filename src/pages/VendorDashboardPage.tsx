@@ -1,15 +1,32 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Header } from "@/components/Header";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Phone, Package, LogOut, Clock, CheckCircle2, XCircle } from "lucide-react";
+import {
+  MapPin,
+  Phone,
+  Package,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  LayoutDashboard,
+  ShoppingBag,
+  Wallet,
+  Settings,
+  Navigation,
+  Store,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { VendorOrdersList } from "@/components/VendorOrdersList";
 import { VendorWallet } from "@/components/VendorWallet";
 import { VendorBusinessIndicators } from "@/components/VendorBusinessIndicators";
 import { VendorProductManager } from "@/components/VendorProductManager";
-import { NotificationBell } from "@/components/NotificationBell";
+import { DayOffToggle } from "@/components/profile/DayOffToggle";
+import { ProfileForm } from "@/components/ProfileForm";
+import { DashboardShell, DashboardSection } from "@/components/layout/DashboardShell";
+
 interface VendorData {
   id: string;
   full_name: string;
@@ -22,84 +39,70 @@ interface VendorData {
   location_updated_at: string | null;
 }
 
+const sections: DashboardSection[] = [
+  { id: "overview", label: "Visão Geral", icon: LayoutDashboard },
+  { id: "products", label: "Produtos & Estoque", icon: Package },
+  { id: "orders", label: "Vendas & Pedidos", icon: ShoppingBag },
+  { id: "finance", label: "Financeiro", icon: Wallet },
+  { id: "settings", label: "Ponto de Venda", icon: Settings },
+];
+
 export default function VendorDashboardPage() {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
+  const [section, setSection] = useState("overview");
 
   useEffect(() => {
-    const checkVendorAccess = async () => {
-      if (!loading) {
-        if (!user) {
-          navigate("/login-ambulante");
-          return;
-        }
-
-        // Check if user is a vendor using user_roles (constitutional)
-        const { data: roles } = await (supabase as any)
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .eq("role", "vendor");
-
-        if (!roles || roles.length === 0) {
-          navigate("/login-ambulante");
-          return;
-        }
-
-        // CORRECT: profiles.id = auth.users.id (identidade soberana)
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .eq("id", user.id)
-          .single();
-
-        if (!profile) {
-          setIsLoadingData(false);
-          return;
-        }
-
-        // Fetch vendor data
-        const { data: vendor } = await supabase
-          .from("vendors")
-          .select("profile_id, whatsapp_number, product_category, product_description, status, location, location_updated_at")
-          .eq("profile_id", profile.id)
-          .single();
-
-        if (vendor) {
-          // Parse location to get lat/lng
-          let latitude: number | null = null;
-          let longitude: number | null = null;
-          
-          setVendorData({
-            id: vendor.profile_id,
-            full_name: profile.full_name,
-            whatsapp_number: vendor.whatsapp_number,
-            product_category: vendor.product_category,
-            product_description: vendor.product_description,
-            status: vendor.status,
-            latitude,
-            longitude,
-            location_updated_at: vendor.location_updated_at
-          });
-        }
-        setIsLoadingData(false);
+    const loadVendor = async () => {
+      if (loading) return;
+      if (!user) {
+        navigate("/login-ambulante");
+        return;
       }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!profile) {
+        setIsLoadingData(false);
+        return;
+      }
+
+      const { data: vendor } = await supabase
+        .from("vendors")
+        .select(
+          "profile_id, whatsapp_number, product_category, product_description, status, location_updated_at"
+        )
+        .eq("profile_id", profile.id)
+        .maybeSingle();
+
+      if (vendor) {
+        setVendorData({
+          id: vendor.profile_id,
+          full_name: profile.full_name,
+          whatsapp_number: vendor.whatsapp_number,
+          product_category: vendor.product_category,
+          product_description: vendor.product_description,
+          status: vendor.status,
+          latitude: null,
+          longitude: null,
+          location_updated_at: vendor.location_updated_at,
+        });
+      }
+      setIsLoadingData(false);
     };
 
-    checkVendorAccess();
+    loadVendor();
   }, [user, loading, navigate]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/ambulantes");
-  };
 
   const updateLocation = async () => {
     if (!vendorData) return;
-
     setIsUpdatingLocation(true);
     try {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -110,11 +113,10 @@ export default function VendorDashboardPage() {
         });
       });
 
-      // Use RPC function to update location
-      const { error } = await supabase.rpc('update_vendor_location', {
+      const { error } = await supabase.rpc("update_vendor_location", {
         p_profile_id: vendorData.id,
         p_latitude: position.coords.latitude,
-        p_longitude: position.coords.longitude
+        p_longitude: position.coords.longitude,
       });
 
       if (!error) {
@@ -132,28 +134,25 @@ export default function VendorDashboardPage() {
     }
   };
 
-  const getStatusBadge = (status: string | null) => {
+  const statusBadge = (status: string | null) => {
     switch (status) {
       case "active":
         return (
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium">
-            <CheckCircle2 className="h-4 w-4" />
-            Ativo
-          </span>
+          <Badge className="gap-1 bg-primary/10 text-primary hover:bg-primary/10">
+            <CheckCircle2 className="h-3.5 w-3.5" /> Barraca ativa
+          </Badge>
         );
       case "pending":
         return (
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-sm font-medium">
-            <Clock className="h-4 w-4" />
-            Aguardando aprovação
-          </span>
+          <Badge variant="secondary" className="gap-1">
+            <Clock className="h-3.5 w-3.5" /> Aguardando aprovação
+          </Badge>
         );
       case "inactive":
         return (
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium">
-            <XCircle className="h-4 w-4" />
-            Inativo
-          </span>
+          <Badge variant="destructive" className="gap-1">
+            <XCircle className="h-3.5 w-3.5" /> Inativa
+          </Badge>
         );
       default:
         return null;
@@ -162,133 +161,150 @@ export default function VendorDashboardPage() {
 
   if (loading || isLoadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="container mx-auto px-4 pt-24 pb-12">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold text-primary">Painel do Herói da Areia</h1>
-            <div className="flex items-center gap-2">
-              <NotificationBell />
-              <Button variant="ghost" onClick={handleSignOut} className="gap-2">
-                <LogOut className="h-4 w-4" />
-                Sair
-              </Button>
-            </div>
-          </div>
-
-          {vendorData && (
+    <DashboardShell
+      title="Painel do Praieiro"
+      subtitle={vendorData?.full_name ?? "Gestão da sua barraca"}
+      roleLabel="Ambulante"
+      sections={sections}
+      active={section}
+      onSectionChange={setSection}
+      actions={
+        <>
+          <Button size="sm" onClick={updateLocation} disabled={isUpdatingLocation} className="gap-2">
+            <Navigation className="h-4 w-4" />
+            {isUpdatingLocation ? "Atualizando..." : "Estou na praia"}
+          </Button>
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => setSection("products")}>
+            <Package className="h-4 w-4" /> Gerenciar produtos
+          </Button>
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => setSection("orders")}>
+            <ShoppingBag className="h-4 w-4" /> Vendas de hoje
+          </Button>
+        </>
+      }
+    >
+      {!vendorData ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Store className="h-5 w-5 text-primary" /> Cadastro de ambulante incompleto
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>Finalize o cadastro da sua barraca para liberar a gestão do ponto de venda.</p>
+            <Button onClick={() => navigate("/login-ambulante")}>Completar cadastro</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {section === "overview" && (
             <div className="space-y-6">
-              {/* Indicadores de Gestão */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-base">Status da barraca</CardTitle>
+                  {statusBadge(vendorData.status)}
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-muted-foreground">
+                  {vendorData.status === "pending" && (
+                    <p>Seu cadastro está em análise. Você será notificado na aprovação.</p>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    {vendorData.location_updated_at ? (
+                      <span>
+                        Localização atualizada em{" "}
+                        {new Date(vendorData.location_updated_at).toLocaleString("pt-BR")}
+                      </span>
+                    ) : (
+                      <span>Localização ainda não compartilhada</span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
               <VendorBusinessIndicators />
+            </div>
+          )}
 
-              {/* Carteira Digital */}
-              <VendorWallet />
-
-              {/* Catálogo de Produtos */}
-              <div className="bg-card rounded-xl p-6 border shadow-sm">
+          {section === "products" && (
+            <Card>
+              <CardContent className="pt-6">
                 <VendorProductManager vendorId={vendorData.id} />
-              </div>
+              </CardContent>
+            </Card>
+          )}
 
-              {/* Status Card */}
-              <div className="bg-card rounded-xl p-6 border shadow-sm">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Status da conta</h2>
-                  {getStatusBadge(vendorData.status)}
-                </div>
-                {vendorData.status === "pending" && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Seu cadastro está em análise. Você receberá uma notificação quando for aprovado.
+          {section === "orders" && (
+            <Card>
+              <CardContent className="pt-6">
+                {vendorData.status === "active" ? (
+                  <VendorOrdersList vendorId={vendorData.id} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Os pedidos aparecem aqui quando sua barraca estiver ativa.
                   </p>
                 )}
-              </div>
+              </CardContent>
+            </Card>
+          )}
 
-              {/* Profile Card */}
-              <div className="bg-card rounded-xl p-6 border shadow-sm">
-                <h2 className="text-lg font-semibold mb-4">Seus dados</h2>
-                <div className="space-y-4">
+          {section === "finance" && <VendorWallet />}
+
+          {section === "settings" && (
+            <div className="space-y-6">
+              <DayOffToggle />
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Dados do ponto de venda</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Package className="h-5 w-5 text-primary" />
-                    </div>
+                    <Package className="h-4 w-4 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Produtos</p>
+                      <p className="text-muted-foreground">Categoria</p>
                       <p className="font-medium">{vendorData.product_category}</p>
                       {vendorData.product_description && (
-                        <p className="text-sm text-muted-foreground">{vendorData.product_description}</p>
+                        <p className="text-muted-foreground">{vendorData.product_description}</p>
                       )}
                     </div>
                   </div>
-
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Phone className="h-5 w-5 text-primary" />
-                    </div>
+                    <Phone className="h-4 w-4 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">WhatsApp</p>
+                      <p className="text-muted-foreground">WhatsApp</p>
                       <p className="font-medium">{vendorData.whatsapp_number}</p>
                     </div>
                   </div>
-                </div>
-              </div>
+                  <Button
+                    onClick={updateLocation}
+                    disabled={isUpdatingLocation || vendorData.status !== "active"}
+                    className="w-full"
+                  >
+                    {isUpdatingLocation ? "Atualizando..." : "Atualizar minha localização"}
+                  </Button>
+                </CardContent>
+              </Card>
 
-              {/* Location Card */}
-              <div className="bg-card rounded-xl p-6 border shadow-sm">
-                <h2 className="text-lg font-semibold mb-4">Localização</h2>
-                
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <MapPin className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    {vendorData.latitude && vendorData.longitude ? (
-                      <>
-                        <p className="font-medium">Localização compartilhada</p>
-                        <p className="text-sm text-muted-foreground">
-                          Última atualização: {vendorData.location_updated_at 
-                            ? new Date(vendorData.location_updated_at).toLocaleString("pt-BR")
-                            : "N/A"}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-muted-foreground">Localização não compartilhada</p>
-                    )}
-                  </div>
-                </div>
-
-                <Button
-                  onClick={updateLocation}
-                  disabled={isUpdatingLocation || vendorData.status !== "active"}
-                  className="w-full bg-accent hover:bg-accent/90"
-                >
-                  {isUpdatingLocation ? "Atualizando..." : "Atualizar minha localização"}
-                </Button>
-
-                {vendorData.status !== "active" && (
-                  <p className="text-xs text-muted-foreground mt-2 text-center">
-                    Você poderá compartilhar sua localização após a aprovação do cadastro.
-                  </p>
-                )}
-              </div>
-
-              {/* Orders Card */}
-              {vendorData.status === "active" && (
-                <div className="bg-card rounded-xl p-6 border shadow-sm">
-                  <VendorOrdersList vendorId={vendorData.id} />
-                </div>
-              )}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Meu perfil</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ProfileForm />
+                </CardContent>
+              </Card>
             </div>
           )}
-        </div>
-      </main>
-    </div>
+        </>
+      )}
+    </DashboardShell>
   );
 }

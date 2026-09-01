@@ -15,31 +15,10 @@ interface NavItem {
   icon?: LucideIcon;
 }
 
-// Items de navegação para cada tipo de usuário
+// Navegação pública (site institucional / entrada)
 const publicNavItems: NavItem[] = [
   { href: "/autenticacao", label: "Área do Cliente" },
   { href: "/login-ambulante", label: "Área do Praieiro" },
-  { href: "/sobre", label: "Sobre" },
-  { href: "/admin/login", label: "Restrito", icon: Lock },
-];
-
-// Para clientes logados - mostra Área do Cliente e Sobre
-const clientNavItems: NavItem[] = [
-  { href: "/feed", label: "Área do Cliente" },
-  { href: "/sobre", label: "Sobre" },
-];
-
-// Para vendors logados - mostra Área do Cliente para acesso como cliente + Área do Praieiro
-const vendorNavItems: NavItem[] = [
-  { href: "/autenticacao", label: "Área do Cliente" },
-  { href: "/painel-ambulante", label: "Área do Praieiro" },
-  { href: "/sobre", label: "Sobre" },
-];
-
-// Para admin - mostra tudo
-const adminNavItems: NavItem[] = [
-  { href: "/", label: "Área do Cliente" },
-  { href: "/ambulantes", label: "Área do Praieiro" },
   { href: "/sobre", label: "Sobre" },
   { href: "/admin/login", label: "Restrito", icon: Lock },
 ];
@@ -52,21 +31,16 @@ export function Header() {
   const { role: userRole } = useUserRole(user?.id);
   const { playClick } = useClickSound();
 
-  // Determinar quais items mostrar baseado no role do usuário
-  const getNavItems = () => {
-    if (!user) return publicNavItems;
-    
-    switch (userRole) {
-      case "admin":
-        return adminNavItems;
-      case "vendor":
-        return vendorNavItems;
-      default:
-        return clientNavItems;
-    }
-  };
+  // Dashboard contextual — um único destino por papel (sem menus aninhados)
+  const dashboardPath =
+    userRole === "vendor" ? "/painel-ambulante" : userRole === "admin" ? "/admin" : "/painel-cliente";
 
-  const navItems = getNavItems();
+  const navItems: NavItem[] = user
+    ? [
+        { href: dashboardPath, label: "Meu Painel" },
+        { href: "/sobre", label: "Sobre" },
+      ]
+    : publicNavItems;
 
   const handleSignOut = async () => {
     playClick();
@@ -106,26 +80,18 @@ export function Header() {
             
             {user && (
               <div className="flex items-center gap-2">
-                <Link
-                  to="/encontrar"
-                  className={`text-xs font-bold transition-colors whitespace-nowrap ${
-                    location.pathname === "/encontrar"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                >
-                  Encontre o seu Praieiro
-                </Link>
-                <Link
-                  to="/meus-pedidos"
-                  className={`text-xs font-bold transition-colors whitespace-nowrap ${
-                    location.pathname === "/meus-pedidos"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                >
-                  Pedidos
-                </Link>
+                {userRole !== "vendor" && (
+                  <Link
+                    to="/encontrar"
+                    className={`text-xs font-bold transition-colors whitespace-nowrap ${
+                      location.pathname === "/encontrar"
+                        ? "text-primary"
+                        : "text-foreground/70 hover:text-primary"
+                    }`}
+                  >
+                    Encontre o seu Praieiro
+                  </Link>
+                )}
                 <NotificationBell />
                 <Button
                   variant="ghost"
@@ -172,28 +138,19 @@ export function Header() {
               
               {user ? (
                 <>
-                  <Link
-                    to="/encontrar"
-                    onClick={() => setIsOpen(false)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      location.pathname === "/encontrar"
-                        ? "bg-primary/10 text-primary font-bold"
-                        : "text-foreground/80 hover:bg-muted"
-                    }`}
-                  >
-                    Encontre o seu Praieiro
-                  </Link>
-                  <Link
-                    to="/meus-pedidos"
-                    onClick={() => setIsOpen(false)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      location.pathname === "/meus-pedidos"
-                        ? "bg-primary/10 text-primary font-bold"
-                        : "text-foreground/80 hover:bg-muted"
-                    }`}
-                  >
-                    Meus Pedidos
-                  </Link>
+                  {userRole !== "vendor" && (
+                    <Link
+                      to="/encontrar"
+                      onClick={() => setIsOpen(false)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        location.pathname === "/encontrar"
+                          ? "bg-primary/10 text-primary font-bold"
+                          : "text-foreground/80 hover:bg-muted"
+                      }`}
+                    >
+                      Encontre o seu Praieiro
+                    </Link>
+                  )}
                   <div className="px-4 py-2">
                     <NotificationBell />
                   </div>
