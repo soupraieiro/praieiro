@@ -251,7 +251,9 @@ export function VendorMap({ beachId, beachName }: VendorMapProps) {
             </div>
           `;
 
-          const distanceText = vendor.distance ? ` • ${formatDistance(vendor.distance)}` : '';
+          const distanceText = vendor.locationUnlocked && vendor.distance
+            ? ` • ${formatDistance(vendor.distance)}`
+            : '';
           // Escape vendor data to prevent XSS attacks
           const safeFullName = escapeHtml(vendor.full_name);
           const safeProductCategory = escapeHtml(vendor.product_category);
@@ -259,6 +261,10 @@ export function VendorMap({ beachId, beachName }: VendorMapProps) {
             <div class="p-2">
               <h3 class="font-bold text-primary">${safeFullName}</h3>
               <p class="text-sm text-muted-foreground">${safeProductCategory}${distanceText}</p>
+              ${vendor.locationUnlocked
+                ? ''
+                : '<p class="mt-1 text-xs text-muted-foreground">Área aproximada — localização exata liberada após o pedido.</p>'}
+
               <button id="call-vendor-${vendor.id}" class="mt-2 w-full px-3 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 transition-colors">
                 Chamar ambulante
               </button>
