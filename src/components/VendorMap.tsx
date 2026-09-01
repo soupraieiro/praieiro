@@ -109,6 +109,27 @@ export function VendorMap({ beachId, beachName }: VendorMapProps) {
     fetchToken();
   }, []);
 
+  // Vendedores cuja localização exata já foi liberada (existe venda/pedido aceito)
+  const [unlockedVendorIds, setUnlockedVendorIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const fetchUnlocked = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setUnlockedVendorIds(new Set());
+        return;
+      }
+      const { data } = await supabase
+        .from("orders")
+        .select("vendor_id, status")
+        .eq("client_id", session.user.id)
+        .in("status", ["accepted", "on_the_way", "delivered", "completed"]);
+
+      setUnlockedVendorIds(new Set((data || []).map((o: { vendor_id: string }) => o.vendor_id)));
+    };
+    fetchUnlocked();
+  }, []);
+
   // Buscar vendors com localização de alta precisão
   useEffect(() => {
     const fetchVendors = async () => {
@@ -119,21 +140,30 @@ export function VendorMap({ beachId, beachName }: VendorMapProps) {
         .eq("status", "active");
 
       if (!error && data) {
-        const mappedVendors = data.map((v: Record<string, unknown>) => ({
-          id: (v.profile_id as string) || "",
-          full_name: (v.full_name as string) || "",
-          product_category: (v.product_category as string) || "",
-          latitude: v.latitude as number | null,
-          longitude: v.longitude as number | null,
-          whatsapp_number: (v.whatsapp_number as string) || "",
-          heading: v.heading as number | null,
-          speed: v.speed as number | null,
-          accuracy_radius: v.accuracy_radius as number | null,
-          freshness: getFreshness(v.location_age_seconds as number | null),
-        })).filter(v => v.id !== "" && v.latitude && v.longitude);
+        const mappedVendors = data.map((v: Record<string, unknown>) => {
+          const id = (v.profile_id as string) || "";
+          const unlocked = unlockedVendorIds.has(id);
+          const lat = v.latitude as number | null;
+          const lng = v.longitude as number | null;
+          // Sem venda concluída, a posição é apenas aproximada (grade de ~500m)
+          const coarse = (n: number | null) => (n === null ? null : Math.round(n / 0.005) * 0.005);
+          return {
+            id,
+            full_name: (v.full_name as string) || "",
+            product_category: (v.product_category as string) || "",
+            latitude: unlocked ? lat : coarse(lat),
+            longitude: unlocked ? lng : coarse(lng),
+            locationUnlocked: unlocked,
+            heading: unlocked ? (v.heading as number | null) : null,
+            speed: unlocked ? (v.speed as number | null) : null,
+            accuracy_radius: v.accuracy_radius as number | null,
+            freshness: getFreshness(v.location_age_seconds as number | null),
+          };
+        }).filter(v => v.id !== "" && v.latitude && v.longitude);
         setVendors(mappedVendors);
       }
     };
+
 
     fetchVendors();
 
