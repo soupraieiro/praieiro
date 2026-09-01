@@ -91,7 +91,7 @@ export default function ClientDashboardPage() {
 
       {section === "discover" && (
         <div className="space-y-6">
-          <BeachWeatherCard />
+          <BeachWeatherCard beachName="Praia da Barra" city="Salvador" />
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Explorar</CardTitle>
