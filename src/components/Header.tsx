@@ -15,31 +15,10 @@ interface NavItem {
   icon?: LucideIcon;
 }
 
-// Items de navegação para cada tipo de usuário
+// Navegação pública (site institucional / entrada)
 const publicNavItems: NavItem[] = [
   { href: "/autenticacao", label: "Área do Cliente" },
   { href: "/login-ambulante", label: "Área do Praieiro" },
-  { href: "/sobre", label: "Sobre" },
-  { href: "/admin/login", label: "Restrito", icon: Lock },
-];
-
-// Para clientes logados - mostra Área do Cliente e Sobre
-const clientNavItems: NavItem[] = [
-  { href: "/feed", label: "Área do Cliente" },
-  { href: "/sobre", label: "Sobre" },
-];
-
-// Para vendors logados - mostra Área do Cliente para acesso como cliente + Área do Praieiro
-const vendorNavItems: NavItem[] = [
-  { href: "/autenticacao", label: "Área do Cliente" },
-  { href: "/painel-ambulante", label: "Área do Praieiro" },
-  { href: "/sobre", label: "Sobre" },
-];
-
-// Para admin - mostra tudo
-const adminNavItems: NavItem[] = [
-  { href: "/", label: "Área do Cliente" },
-  { href: "/ambulantes", label: "Área do Praieiro" },
   { href: "/sobre", label: "Sobre" },
   { href: "/admin/login", label: "Restrito", icon: Lock },
 ];
@@ -52,21 +31,16 @@ export function Header() {
   const { role: userRole } = useUserRole(user?.id);
   const { playClick } = useClickSound();
 
-  // Determinar quais items mostrar baseado no role do usuário
-  const getNavItems = () => {
-    if (!user) return publicNavItems;
-    
-    switch (userRole) {
-      case "admin":
-        return adminNavItems;
-      case "vendor":
-        return vendorNavItems;
-      default:
-        return clientNavItems;
-    }
-  };
+  // Dashboard contextual — um único destino por papel (sem menus aninhados)
+  const dashboardPath =
+    userRole === "vendor" ? "/painel-ambulante" : userRole === "admin" ? "/admin" : "/painel-cliente";
 
-  const navItems = getNavItems();
+  const navItems: NavItem[] = user
+    ? [
+        { href: dashboardPath, label: "Meu Painel" },
+        { href: "/sobre", label: "Sobre" },
+      ]
+    : publicNavItems;
 
   const handleSignOut = async () => {
     playClick();
