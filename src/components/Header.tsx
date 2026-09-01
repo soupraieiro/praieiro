@@ -138,28 +138,19 @@ export function Header() {
               
               {user ? (
                 <>
-                  <Link
-                    to="/encontrar"
-                    onClick={() => setIsOpen(false)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      location.pathname === "/encontrar"
-                        ? "bg-primary/10 text-primary font-bold"
-                        : "text-foreground/80 hover:bg-muted"
-                    }`}
-                  >
-                    Encontre o seu Praieiro
-                  </Link>
-                  <Link
-                    to="/meus-pedidos"
-                    onClick={() => setIsOpen(false)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      location.pathname === "/meus-pedidos"
-                        ? "bg-primary/10 text-primary font-bold"
-                        : "text-foreground/80 hover:bg-muted"
-                    }`}
-                  >
-                    Meus Pedidos
-                  </Link>
+                  {userRole !== "vendor" && (
+                    <Link
+                      to="/encontrar"
+                      onClick={() => setIsOpen(false)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        location.pathname === "/encontrar"
+                          ? "bg-primary/10 text-primary font-bold"
+                          : "text-foreground/80 hover:bg-muted"
+                      }`}
+                    >
+                      Encontre o seu Praieiro
+                    </Link>
+                  )}
                   <div className="px-4 py-2">
                     <NotificationBell />
                   </div>
