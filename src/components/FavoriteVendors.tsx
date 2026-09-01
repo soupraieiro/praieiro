@@ -172,16 +172,12 @@ export function FavoriteVendors({ clientId }: FavoriteVendorsProps) {
                       size="sm"
                       variant="default"
                       className="gap-1"
-                      onClick={() =>
-                        openWhatsApp(
-                          favorite.vendor.whatsapp_number,
-                          favorite.vendor.full_name
-                        )
-                      }
+                      onClick={() => setChatVendor(favorite.vendor)}
                     >
-                      <Phone className="h-3 w-3" />
-                      Chamar
+                      <MessageCircle className="h-3 w-3" />
+                      Chat
                     </Button>
+
                     <Button
                       size="sm"
                       variant="ghost"
