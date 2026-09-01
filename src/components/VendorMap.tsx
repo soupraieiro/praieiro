@@ -189,7 +189,7 @@ export function VendorMap({ beachId, beachName }: VendorMapProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [beachId]);
+  }, [beachId, unlockedVendorIds]);
 
   // Inicializar mapa
   useEffect(() => {
