@@ -96,7 +96,27 @@ const App = () => (
               />
               <Route path="/ambulantes" element={<AmbulantesPage />} />
               <Route path="/login-ambulante" element={<VendorAuthPage />} />
-              <Route path="/painel-ambulante" element={<VendorDashboardPage />} />
+              {/* 🏪 DASHBOARD DO AMBULANTE (RBAC: vendor/admin) */}
+              <Route
+                path="/painel-ambulante"
+                element={
+                  <RoleRoute allow={["vendor", "admin"]}>
+                    <VendorDashboardPage />
+                  </RoleRoute>
+                }
+              />
+              <Route path="/vendor/dashboard" element={<Navigate to="/painel-ambulante" replace />} />
+              {/* 🏖️ DASHBOARD / FEED DO CLIENTE (RBAC: user/admin — vendedor não entra) */}
+              <Route
+                path="/painel-cliente"
+                element={
+                  <ProtectedRoute>
+                    <RoleRoute allow={["user", "admin"]}>
+                      <ClientDashboardPage />
+                    </RoleRoute>
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
               <Route path="/admin/login" element={<AdminLoginPage />} />
