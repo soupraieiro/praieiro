@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, Star, MessageCircle, Phone } from "lucide-react";
+import { Heart, Star, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { RequestVendorDialog } from "./RequestVendorDialog";
+import { ChatWindow } from "./ChatWindow";
 
 interface FavoriteVendor {
   id: string;
@@ -15,7 +17,6 @@ interface FavoriteVendor {
     product_category: string;
     product_description: string | null;
     profile_photo_url: string | null;
-    whatsapp_number: string;
   };
   rating?: {
     average_rating: number | null;
@@ -30,6 +31,8 @@ interface FavoriteVendorsProps {
 export function FavoriteVendors({ clientId }: FavoriteVendorsProps) {
   const [favorites, setFavorites] = useState<FavoriteVendor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chatVendor, setChatVendor] = useState<FavoriteVendor["vendor"] | null>(null);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchFavorites();
@@ -46,11 +49,11 @@ export function FavoriteVendors({ clientId }: FavoriteVendorsProps) {
           full_name,
           product_category,
           product_description,
-          profile_photo_url,
-          whatsapp_number
+          profile_photo_url
         )
       `)
       .eq("client_id", clientId);
+
 
     if (data) {
       // Fetch ratings for each vendor
