@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SatoshiStateProvider } from "@/contexts/SatoshiStateContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { RoleRoute } from "@/components/RoleRoute";
+import ClientDashboardPage from "./pages/ClientDashboardPage";
 import { SatoshiIPGuard } from "@/components/SatoshiIPGuard";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
