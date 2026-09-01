@@ -24,23 +24,23 @@ const publicItems: NavItem[] = [
 ];
 
 const clientItems: NavItem[] = [
-  { path: "/feed", label: "Início", icon: Home, requiresAuth: true },
+  { path: "/painel-cliente", label: "Painel", icon: Home, requiresAuth: true },
+  { path: "/feed", label: "Feed", icon: Newspaper, requiresAuth: true },
   { path: "/encontrar", label: "Encontrar", icon: Search, requiresAuth: true },
   { path: "/meus-pedidos", label: "Pedidos", icon: ShoppingBag, requiresAuth: true },
   { path: "/perfil", label: "Perfil", icon: User, requiresAuth: true },
 ];
 
 const vendorItems: NavItem[] = [
-  { path: "/painel-ambulante", label: "Meu Painel", icon: Store, requiresAuth: true, roles: ["vendor"] },
-  { path: "/encontrar", label: "Encontrar", icon: Search, requiresAuth: true },
-  { path: "/meus-pedidos", label: "Pedidos", icon: ShoppingBag, requiresAuth: true },
+  { path: "/painel-ambulante", label: "Painel", icon: Store, requiresAuth: true, roles: ["vendor"] },
+  { path: "/marketplace", label: "Vitrine", icon: Search, requiresAuth: true },
   { path: "/perfil", label: "Perfil", icon: User, requiresAuth: true },
 ];
 
 const adminItems: NavItem[] = [
   { path: "/admin", label: "Admin", icon: Settings, requiresAuth: true, roles: ["admin"] },
+  { path: "/painel-cliente", label: "Cliente", icon: Home, requiresAuth: true },
   { path: "/encontrar", label: "Encontrar", icon: Search, requiresAuth: true },
-  { path: "/meus-pedidos", label: "Pedidos", icon: ShoppingBag, requiresAuth: true },
   { path: "/perfil", label: "Perfil", icon: User, requiresAuth: true },
 ];
 
