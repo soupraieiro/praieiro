@@ -180,9 +180,25 @@ export function VendorMap({ beachId, beachName }: VendorMapProps) {
         (payload) => {
           const updated = payload.new as Vendor;
           setVendors((prev) =>
-            prev.map((v) => (v.id === updated.id ? { ...v, ...updated } : v))
+            prev.map((v) => {
+              if (v.id !== updated.id) return v;
+              if (v.locationUnlocked) return { ...v, ...updated, locationUnlocked: true };
+              // Sem pedido, mantém apenas a área aproximada
+              const coarse = (n: number | null | undefined) =>
+                n === null || n === undefined ? null : Math.round(n / 0.005) * 0.005;
+              return {
+                ...v,
+                ...updated,
+                latitude: coarse(updated.latitude) ?? v.latitude,
+                longitude: coarse(updated.longitude) ?? v.longitude,
+                heading: null,
+                speed: null,
+                locationUnlocked: false,
+              };
+            })
           );
         }
+
       )
       .subscribe();
 
