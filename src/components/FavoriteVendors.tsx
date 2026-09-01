@@ -91,13 +91,8 @@ export function FavoriteVendors({ clientId }: FavoriteVendorsProps) {
     }
   };
 
-  const openWhatsApp = (phone: string, name: string) => {
-    const cleanPhone = phone.replace(/\D/g, "");
-    const message = encodeURIComponent(
-      `Olá ${name}! Vi seu perfil no Praieiro e gostaria de fazer um pedido.`
-    );
-    window.open(`https://wa.me/55${cleanPhone}?text=${message}`, "_blank");
-  };
+  // Contato pessoal do vendedor não é exposto: conversa só pelo chat nativo
+
 
   if (loading) {
     return (
