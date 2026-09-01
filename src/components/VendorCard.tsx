@@ -3,6 +3,8 @@ import { MessageCircle, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { StarRating } from "./StarRating";
+import { RequestVendorDialog } from "./RequestVendorDialog";
+import { ChatWindow } from "./ChatWindow";
 
 interface VendorRating {
   average_rating: number;
@@ -16,13 +18,16 @@ interface VendorCardProps {
     product_category: string;
     product_description: string | null;
     profile_photo_url: string | null;
-    whatsapp_number: string;
+    /** Contato pessoal NUNCA é exposto ao cliente — mantido apenas por compatibilidade de tipo. */
+    whatsapp_number?: string;
   };
   beachId?: string;
 }
 
 export function VendorCard({ vendor, beachId }: VendorCardProps) {
   const [rating, setRating] = useState<VendorRating | null>(null);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRating = async () => {
@@ -42,23 +47,11 @@ export function VendorCard({ vendor, beachId }: VendorCardProps) {
     fetchRating();
   }, [vendor.id]);
 
-  const whatsappMessage = encodeURIComponent(
-    "Olá, te encontrei pelo Praieiro e estou na praia agora 🙂"
-  );
-  const whatsappUrl = `https://wa.me/${vendor.whatsapp_number.replace(/\D/g, "")}?text=${whatsappMessage}`;
-
-  const handleWhatsAppClick = async () => {
-    // Track the click
+  const handleNativeChatClick = async () => {
+    // Track client interest in product category (sem expor contato pessoal)
     try {
-      await supabase.from("whatsapp_clicks").insert({
-        vendor_id: vendor.id,
-        beach_id: beachId || null,
-      });
-
-      // Track client interest in product category
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        // Get client profile_id
         // CORRECT: profiles.id = auth.users.id (identidade soberana)
         const { data: profile } = await supabase
           .from("profiles")
@@ -76,12 +69,25 @@ export function VendorCard({ vendor, beachId }: VendorCardProps) {
         }
       }
     } catch (error) {
-      console.error("Error tracking click:", error);
+      console.error("Error tracking interest:", error);
     }
-    
-    // Open WhatsApp
-    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+
+    setRequestOpen(true);
   };
+
+  if (activeOrderId) {
+    return (
+      <div className="h-[500px]">
+        <ChatWindow
+          orderId={activeOrderId}
+          userType="client"
+          otherPartyName={vendor.full_name}
+          onClose={() => setActiveOrderId(null)}
+        />
+      </div>
+    );
+  }
+
 
   return (
     <div className="overflow-hidden rounded-2xl border-2 border-accent/30 bg-white shadow-lg transition-all hover:shadow-xl hover:border-accent/50">
