@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, Star, MessageCircle, Phone } from "lucide-react";
+import { Heart, Star, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { RequestVendorDialog } from "./RequestVendorDialog";
+import { ChatWindow } from "./ChatWindow";
 
 interface FavoriteVendor {
   id: string;
@@ -15,7 +17,6 @@ interface FavoriteVendor {
     product_category: string;
     product_description: string | null;
     profile_photo_url: string | null;
-    whatsapp_number: string;
   };
   rating?: {
     average_rating: number | null;
@@ -30,6 +31,8 @@ interface FavoriteVendorsProps {
 export function FavoriteVendors({ clientId }: FavoriteVendorsProps) {
   const [favorites, setFavorites] = useState<FavoriteVendor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chatVendor, setChatVendor] = useState<FavoriteVendor["vendor"] | null>(null);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchFavorites();
@@ -46,11 +49,11 @@ export function FavoriteVendors({ clientId }: FavoriteVendorsProps) {
           full_name,
           product_category,
           product_description,
-          profile_photo_url,
-          whatsapp_number
+          profile_photo_url
         )
       `)
       .eq("client_id", clientId);
+
 
     if (data) {
       // Fetch ratings for each vendor
@@ -88,13 +91,8 @@ export function FavoriteVendors({ clientId }: FavoriteVendorsProps) {
     }
   };
 
-  const openWhatsApp = (phone: string, name: string) => {
-    const cleanPhone = phone.replace(/\D/g, "");
-    const message = encodeURIComponent(
-      `Olá ${name}! Vi seu perfil no Praieiro e gostaria de fazer um pedido.`
-    );
-    window.open(`https://wa.me/55${cleanPhone}?text=${message}`, "_blank");
-  };
+  // Contato pessoal do vendedor não é exposto: conversa só pelo chat nativo
+
 
   if (loading) {
     return (
@@ -174,16 +172,12 @@ export function FavoriteVendors({ clientId }: FavoriteVendorsProps) {
                       size="sm"
                       variant="default"
                       className="gap-1"
-                      onClick={() =>
-                        openWhatsApp(
-                          favorite.vendor.whatsapp_number,
-                          favorite.vendor.full_name
-                        )
-                      }
+                      onClick={() => setChatVendor(favorite.vendor)}
                     >
-                      <Phone className="h-3 w-3" />
-                      Chamar
+                      <MessageCircle className="h-3 w-3" />
+                      Chat
                     </Button>
+
                     <Button
                       size="sm"
                       variant="ghost"
@@ -200,6 +194,34 @@ export function FavoriteVendors({ clientId }: FavoriteVendorsProps) {
           </div>
         </ScrollArea>
       )}
+
+      {chatVendor && (
+        <RequestVendorDialog
+          open={!!chatVendor && !activeOrderId}
+          onOpenChange={(open) => !open && setChatVendor(null)}
+          vendor={{
+            id: chatVendor.id,
+            full_name: chatVendor.full_name,
+            product_category: chatVendor.product_category,
+          }}
+          onSuccess={(orderId) => setActiveOrderId(orderId)}
+        />
+      )}
+
+      {activeOrderId && chatVendor && (
+        <div className="h-[420px]">
+          <ChatWindow
+            orderId={activeOrderId}
+            userType="client"
+            otherPartyName={chatVendor.full_name}
+            onClose={() => {
+              setActiveOrderId(null);
+              setChatVendor(null);
+            }}
+          />
+        </div>
+      )}
     </div>
+
   );
 }

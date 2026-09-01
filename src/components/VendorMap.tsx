@@ -18,7 +18,7 @@ interface Vendor {
   product_category: string;
   latitude: number | null;
   longitude: number | null;
-  whatsapp_number: string;
+  locationUnlocked?: boolean;
   heading?: number | null;
   speed?: number | null;
   accuracy_radius?: number | null;
@@ -109,6 +109,27 @@ export function VendorMap({ beachId, beachName }: VendorMapProps) {
     fetchToken();
   }, []);
 
+  // Vendedores cuja localização exata já foi liberada (existe venda/pedido aceito)
+  const [unlockedVendorIds, setUnlockedVendorIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const fetchUnlocked = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setUnlockedVendorIds(new Set());
+        return;
+      }
+      const { data } = await supabase
+        .from("orders")
+        .select("vendor_id, status")
+        .eq("client_id", session.user.id)
+        .in("status", ["accepted", "on_the_way", "delivered", "completed"]);
+
+      setUnlockedVendorIds(new Set((data || []).map((o: { vendor_id: string }) => o.vendor_id)));
+    };
+    fetchUnlocked();
+  }, []);
+
   // Buscar vendors com localização de alta precisão
   useEffect(() => {
     const fetchVendors = async () => {
@@ -119,21 +140,30 @@ export function VendorMap({ beachId, beachName }: VendorMapProps) {
         .eq("status", "active");
 
       if (!error && data) {
-        const mappedVendors = data.map((v: Record<string, unknown>) => ({
-          id: (v.profile_id as string) || "",
-          full_name: (v.full_name as string) || "",
-          product_category: (v.product_category as string) || "",
-          latitude: v.latitude as number | null,
-          longitude: v.longitude as number | null,
-          whatsapp_number: (v.whatsapp_number as string) || "",
-          heading: v.heading as number | null,
-          speed: v.speed as number | null,
-          accuracy_radius: v.accuracy_radius as number | null,
-          freshness: getFreshness(v.location_age_seconds as number | null),
-        })).filter(v => v.id !== "" && v.latitude && v.longitude);
+        const mappedVendors = data.map((v: Record<string, unknown>) => {
+          const id = (v.profile_id as string) || "";
+          const unlocked = unlockedVendorIds.has(id);
+          const lat = v.latitude as number | null;
+          const lng = v.longitude as number | null;
+          // Sem venda concluída, a posição é apenas aproximada (grade de ~500m)
+          const coarse = (n: number | null) => (n === null ? null : Math.round(n / 0.005) * 0.005);
+          return {
+            id,
+            full_name: (v.full_name as string) || "",
+            product_category: (v.product_category as string) || "",
+            latitude: unlocked ? lat : coarse(lat),
+            longitude: unlocked ? lng : coarse(lng),
+            locationUnlocked: unlocked,
+            heading: unlocked ? (v.heading as number | null) : null,
+            speed: unlocked ? (v.speed as number | null) : null,
+            accuracy_radius: v.accuracy_radius as number | null,
+            freshness: getFreshness(v.location_age_seconds as number | null),
+          };
+        }).filter(v => v.id !== "" && v.latitude && v.longitude);
         setVendors(mappedVendors);
       }
     };
+
 
     fetchVendors();
 
@@ -150,16 +180,32 @@ export function VendorMap({ beachId, beachName }: VendorMapProps) {
         (payload) => {
           const updated = payload.new as Vendor;
           setVendors((prev) =>
-            prev.map((v) => (v.id === updated.id ? { ...v, ...updated } : v))
+            prev.map((v) => {
+              if (v.id !== updated.id) return v;
+              if (v.locationUnlocked) return { ...v, ...updated, locationUnlocked: true };
+              // Sem pedido, mantém apenas a área aproximada
+              const coarse = (n: number | null | undefined) =>
+                n === null || n === undefined ? null : Math.round(n / 0.005) * 0.005;
+              return {
+                ...v,
+                ...updated,
+                latitude: coarse(updated.latitude) ?? v.latitude,
+                longitude: coarse(updated.longitude) ?? v.longitude,
+                heading: null,
+                speed: null,
+                locationUnlocked: false,
+              };
+            })
           );
         }
+
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [beachId]);
+  }, [beachId, unlockedVendorIds]);
 
   // Inicializar mapa
   useEffect(() => {
@@ -221,7 +267,9 @@ export function VendorMap({ beachId, beachName }: VendorMapProps) {
             </div>
           `;
 
-          const distanceText = vendor.distance ? ` • ${formatDistance(vendor.distance)}` : '';
+          const distanceText = vendor.locationUnlocked && vendor.distance
+            ? ` • ${formatDistance(vendor.distance)}`
+            : '';
           // Escape vendor data to prevent XSS attacks
           const safeFullName = escapeHtml(vendor.full_name);
           const safeProductCategory = escapeHtml(vendor.product_category);
@@ -229,6 +277,10 @@ export function VendorMap({ beachId, beachName }: VendorMapProps) {
             <div class="p-2">
               <h3 class="font-bold text-primary">${safeFullName}</h3>
               <p class="text-sm text-muted-foreground">${safeProductCategory}${distanceText}</p>
+              ${vendor.locationUnlocked
+                ? ''
+                : '<p class="mt-1 text-xs text-muted-foreground">Área aproximada — localização exata liberada após o pedido.</p>'}
+
               <button id="call-vendor-${vendor.id}" class="mt-2 w-full px-3 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 transition-colors">
                 Chamar ambulante
               </button>
