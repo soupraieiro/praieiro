@@ -194,6 +194,34 @@ export function FavoriteVendors({ clientId }: FavoriteVendorsProps) {
           </div>
         </ScrollArea>
       )}
+
+      {chatVendor && (
+        <RequestVendorDialog
+          open={!!chatVendor && !activeOrderId}
+          onOpenChange={(open) => !open && setChatVendor(null)}
+          vendor={{
+            id: chatVendor.id,
+            full_name: chatVendor.full_name,
+            product_category: chatVendor.product_category,
+          }}
+          onSuccess={(orderId) => setActiveOrderId(orderId)}
+        />
+      )}
+
+      {activeOrderId && chatVendor && (
+        <div className="h-[420px]">
+          <ChatWindow
+            orderId={activeOrderId}
+            userType="client"
+            otherPartyName={chatVendor.full_name}
+            onClose={() => {
+              setActiveOrderId(null);
+              setChatVendor(null);
+            }}
+          />
+        </div>
+      )}
     </div>
+
   );
 }
