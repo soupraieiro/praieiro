@@ -132,15 +132,29 @@ export function VendorCard({ vendor, beachId }: VendorCardProps) {
           </p>
         )}
 
-        {/* Botão WhatsApp com tracking */}
+        {/* Chat nativo — contato pessoal do vendedor nunca é exposto */}
         <Button
-          onClick={handleWhatsAppClick}
-          className="mt-4 w-full gap-2 whatsapp-gradient text-white hover:opacity-90 font-semibold rounded-full"
+          onClick={handleNativeChatClick}
+          className="mt-4 w-full gap-2 bg-accent text-accent-foreground hover:opacity-90 font-semibold rounded-full"
         >
-          <MessageCircle className="h-5 w-5" fill="currentColor" />
-          Chamar no WhatsApp
+          <MessageCircle className="h-5 w-5" />
+          Chamar no chat do Praieiro
         </Button>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          A localização exata é liberada após o pedido.
+        </p>
       </div>
+
+      <RequestVendorDialog
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
+        vendor={{ id: vendor.id, full_name: vendor.full_name, product_category: vendor.product_category }}
+        onSuccess={(orderId) => {
+          setRequestOpen(false);
+          setActiveOrderId(orderId);
+        }}
+      />
+
     </div>
   );
 }
