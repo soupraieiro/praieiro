@@ -127,11 +127,14 @@ const App = () => (
               <Route path="/marketplace" element={<MarketplacePage />} />
               <Route path="/manifesto" element={<ManifestoPage />} />
               <Route path="/payment-success" element={<PaymentSuccessPage />} />
+              {/* Feed é exclusivo do cliente — vendedor cai no painel do ambulante */}
               <Route 
                 path="/feed" 
                 element={
                   <ProtectedRoute>
-                    <FeedPage />
+                    <RoleRoute allow={["user", "admin"]}>
+                      <FeedPage />
+                    </RoleRoute>
                   </ProtectedRoute>
                 } 
               />
