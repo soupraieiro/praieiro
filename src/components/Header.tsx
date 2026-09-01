@@ -80,26 +80,18 @@ export function Header() {
             
             {user && (
               <div className="flex items-center gap-2">
-                <Link
-                  to="/encontrar"
-                  className={`text-xs font-bold transition-colors whitespace-nowrap ${
-                    location.pathname === "/encontrar"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                >
-                  Encontre o seu Praieiro
-                </Link>
-                <Link
-                  to="/meus-pedidos"
-                  className={`text-xs font-bold transition-colors whitespace-nowrap ${
-                    location.pathname === "/meus-pedidos"
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
-                  }`}
-                >
-                  Pedidos
-                </Link>
+                {userRole !== "vendor" && (
+                  <Link
+                    to="/encontrar"
+                    className={`text-xs font-bold transition-colors whitespace-nowrap ${
+                      location.pathname === "/encontrar"
+                        ? "text-primary"
+                        : "text-foreground/70 hover:text-primary"
+                    }`}
+                  >
+                    Encontre o seu Praieiro
+                  </Link>
+                )}
                 <NotificationBell />
                 <Button
                   variant="ghost"
